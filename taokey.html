@@ -3,62 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Key Management</title>
-
+    <title>Admin System - Quản lý Key</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            min-height: 100vh; background: #0d0d0d; color: #e0e0e0;
+            font-family: 'Segoe UI', Arial, sans-serif; padding: 30px;
             display: flex; flex-direction: column; align-items: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px; color: #fff;
         }
-
-        /* Giao diện tạo Key */
-        .box {
-            width: 100%; max-width: 400px; padding: 25px;
-            border-radius: 20px; background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        .container { width: 100%; max-width: 900px; }
+        .card {
+            background: #1a1a1a; padding: 25px; border-radius: 15px;
+            border: 1px solid #333; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-
-        h3 { margin-bottom: 20px; text-align: center; letter-spacing: 1px; }
-
+        h2 { margin-bottom: 20px; color: #0a84ff; text-align: center; }
+        .form-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         input, select, button {
-            width: 100%; padding: 12px; margin-bottom: 15px;
-            border-radius: 10px; border: none; outline: none;
+            padding: 12px; border-radius: 8px; border: 1px solid #333;
+            background: #262626; color: #fff; outline: none; font-size: 14px;
         }
-
-        input, select { background: rgba(255,255,255,0.2); color: #fff; }
-        input::placeholder { color: #ccc; }
-        select option { background: #203a43; }
-
-        button { 
-            background: #0a84ff; color: #fff; font-weight: bold; 
-            cursor: pointer; transition: 0.3s; 
-        }
-        button:hover { background: #0066cc; transform: translateY(-2px); }
-
-        /* Giao diện danh sách (History) */
-        .history-box {
-            width: 100%; max-width: 800px; background: rgba(0,0,0,0.3);
-            border-radius: 20px; padding: 20px; backdrop-filter: blur(10px);
-        }
-
-        .table-container { overflow-x: auto; }
+        button { cursor: pointer; font-weight: bold; transition: 0.3s; border: none; text-transform: uppercase; }
+        .btn-create { background: #0a84ff; grid-column: span 2; }
+        .btn-create:hover { background: #0070e0; }
+        .btn-clean { background: #ff9f0a; margin-bottom: 15px; padding: 8px 15px; font-size: 12px; }
+        .table-box { background: #1a1a1a; border-radius: 15px; border: 1px solid #333; padding: 20px; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
-        th { color: #0a84ff; text-transform: uppercase; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
+        th { color: #888; font-size: 11px; text-transform: uppercase; }
+        .key-text { font-family: monospace; color: #0f0; font-weight: bold; }
+        .status-badge { padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; }
+        .bg-green { background: rgba(50, 215, 75, 0.2); color: #32d74b; }
+        .bg-orange { background: rgba(255, 159, 10, 0.2); color: #ff9f0a; }
+        .bg-red { background: rgba(255, 69, 58, 0.2); color: #ff453a; }
+        .btn-delete { background: #ff453a; color: #fff; padding: 6px 12px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h2>ADMIN KEY MANAGER</h2>
+        <div class="form-group">
+            <input id="keyInput" placeholder="Tên Key (Vd: VIP-123)">
+            <select id="keyType" onchange="toggleDays()">
+                <option value="ONCE">Dùng 1 lần</option>
+                <option value="TIME">Theo ngày</option>
+                <option value="INFINITE">Vĩnh viễn</option>
+                <option value="LOCKED_ONCE">1 lần - Khóa máy</option>
+                <option value="LOCKED_TIME">Ngày - Khóa máy</option>
+                <option value="LOCKED_INFINITE">Vĩnh viễn - Khóa máy</option>
+            </select>
+        </div>
+        <input id="daysInput" type="number" placeholder="Nhập số ngày" style="display:none; width: 100%; margin-bottom: 15px;">
+        <button class="btn-create" onclick="createKey()">Tạo Key Hệ Thống</button>
+        <div id="msg" style="text-align:center; margin-top:10px"></div>
+    </div>
+    <button class="btn-clean" onclick="cleanExpiredKeys()">Dọn dẹp Key hết hạn / đã dùng</button>
+    <div class="table-box">
+        <table>
+            <thead>
+                <tr><th>Key</th><th>Loại</th><th>Trạng Thái</th><th>Thiết Bị</th><th>Hành Động</th></tr>
+            </thead>
+            <tbody id="keyTableBody"></tbody>
+        </table>
+    </div>
+</div>
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
+        databaseURL: "https://keyquocdat-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref("keys");
 
-        .btn-delete {
-            background: #ff453a; padding: 5px 10px; border-radius: 5px;
-            font-size: 12px; cursor: pointer; transition: 0.2s;
+    function toggleDays() {
+        const type = document.getElementById("keyType").value;
+        document.getElementById("daysInput").style.display = (type.includes("TIME")) ? "block" : "none";
+    }
+
+    async function createKey() {
+        const key = document.getElementById("keyInput").value.trim().toUpperCase();
+        const type = document.getElementById("keyType").value;
+        const days = parseInt(document.getElementById("daysInput").value);
+        if (!key) return alert("Nhập tên key!");
+        let data = { type: type, createdAt: firebase.database.ServerValue.TIMESTAMP, device: null };
+        if (type.includes("ONCE")) data.used = false;
+        if (type.includes("TIME")) {
+            if (!days || days <= 0) return alert("Nhập số ngày!");
+            data.expiresAt = Date.now() + (days * 86400000);
         }
-        .btn-delete:hover { background: #c0392b; }
+        await db.child(key).set(data);
+        document.getElementById("keyInput").value = "";
+    }
+
+    db.on('value', (snapshot) => {
+        const tbody = document.getElementById("keyTableBody");
+        tbody.innerHTML = "";
+        const keys = snapshot.val();
+        if (!keys) return;
+        for (let id in keys) {
+            let info = keys[id];
+            let statusText = "Khả dụng", statusClass = "bg-green";
+            if (info.used) { statusText = "Đã dùng"; statusClass = "bg-orange"; }
+            if (info.expiresAt && Date.now() > info.expiresAt) { statusText = "Hết hạn"; statusClass = "bg-red"; }
+            let tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td class="key-text">${id}</td><td><small>${info.type}</small></td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td><small>${info.device || '-'}</small></td>
+                <td><button class="btn-delete" onclick="deleteKey('${id}')">Xoá</button></td>`;
+            tbody.appendChild(tr);
+        }
+    });
+
+    async function deleteKey(id) { if (confirm("Xoá key: " + id + "?")) await db.child(id).remove(); }
+
+    async function cleanExpiredKeys() {
+        if (!confirm("Xoá tất cả key cũ?")) return;
+        const snapshot = await db.once('value');
+        const keys = snapshot.val();
+        for (let id in keys) {
+            if (keys[id].used || (keys[id].expiresAt && Date.now() > keys[id].expiresAt)) await db.child(id).remove();
+        }
+    }
+</script>
+</body>
+</html>
 
         .status-used { color: #ff9f0a; }
         .status-active { color: #32d74b; }
