@@ -1,141 +1,88 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hacker System - Verify Key</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hacker System - Access Portal</title>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-<style>
-/* Reset & Base */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #000; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; font-family: 'Courier New', Courier, monospace;
+        }
 
-body {
-    background: #000;
-    overflow: hidden; /* Ẩn thanh cuộn để hiệu ứng canvas đẹp hơn */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    font-family: 'Courier New', Courier, monospace; /* Font kiểu máy tính cổ điển */
-}
+        #matrix-canvas { position: fixed; top: 0; left: 0; z-index: 1; }
 
-/* Hiệu ứng Matrix Canvas */
-#matrix-canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1;
-}
+        .hacker-box {
+            position: relative; z-index: 2;
+            width: 90%; max-width: 400px; padding: 35px 30px;
+            background: rgba(0, 0, 0, 0.9); border: 2px solid #0f0;
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.2); text-align: center;
+        }
 
-/* Hộp xác minh phong cách Terminal */
-.hacker-box {
-    position: relative;
-    z-index: 2;
-    width: 90%;
-    max-width: 400px;
-    padding: 40px 30px;
-    background: rgba(0, 0, 0, 0.85);
-    border: 2px solid #0f0;
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-    text-align: center;
-}
+        h3 { color: #0f0; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 25px; text-shadow: 0 0 10px #0f0; }
 
-h3 {
-    color: #0f0;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    margin-bottom: 25px;
-    text-shadow: 0 0 10px #0f0;
-    font-size: 1.5rem;
-}
+        input[type="text"] {
+            width: 100%; padding: 15px; margin-bottom: 15px;
+            background: transparent; border: 1px solid #0f0;
+            color: #0f0; font-size: 18px; text-align: center; outline: none;
+        }
 
-/* Input phong cách Command Line */
-input {
-    width: 100%;
-    padding: 15px;
-    margin-bottom: 20px;
-    background: transparent;
-    border: 1px solid #0f0;
-    color: #0f0;
-    font-size: 18px;
-    text-align: center;
-    outline: none;
-    transition: all 0.3s;
-}
+        /* Style cho cụm Checkbox */
+        .remember-me {
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px; color: #0f0; font-size: 13px; cursor: pointer;
+        }
 
-input:focus {
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
-    background: rgba(0, 255, 0, 0.05);
-}
+        .remember-me input {
+            margin-right: 8px; cursor: pointer; accent-color: #0f0;
+        }
 
-/* Button phong cách Retro */
-button {
-    width: 100%;
-    padding: 15px;
-    border: 1px solid #0f0;
-    background: transparent;
-    color: #0f0;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: 0.3s;
-    position: relative;
-    overflow: hidden;
-}
+        button {
+            width: 100%; padding: 15px; border: 1px solid #0f0;
+            background: transparent; color: #0f0; font-size: 16px;
+            font-weight: bold; cursor: pointer; text-transform: uppercase;
+        }
 
-button:hover {
-    background: #0f0;
-    color: #000;
-    box-shadow: 0 0 20px #0f0;
-}
+        button:hover { background: #0f0; color: #000; box-shadow: 0 0 20px #0f0; }
+        button:disabled { opacity: 0.3; }
 
-button:active { transform: scale(0.95); }
-button:disabled { border-color: #050; color: #050; cursor: not-allowed; }
+        .progress-container { margin-top: 20px; height: 10px; border: 1px solid #0f0; display: none; }
+        .progress-bar { height: 100%; width: 0%; background: #0f0; box-shadow: 0 0 10px #0f0; }
 
-/* Progress Bar kiểu Terminal */
-.progress-container {
-    margin-top: 20px;
-    height: 10px;
-    border: 1px solid #0f0;
-    display: none;
-}
+        #msg { margin-top: 20px; font-size: 13px; color: #0f0; text-transform: uppercase; min-height: 20px; }
+        .success { color: #00ffcc !important; text-shadow: 0 0 10px #00ffcc; }
+        .error { color: #f00 !important; border-color: #f00 !important; text-shadow: 0 0 10px #f00; }
 
-.progress-bar {
-    height: 100%;
-    width: 0%;
-    background: #0f0;
-    box-shadow: 0 0 10px #0f0;
-}
-
-#msg {
-    margin-top: 20px;
-    font-size: 14px;
-    color: #0f0;
-    text-transform: uppercase;
-    min-height: 20px;
-}
-
-/* Trạng thái thông báo */
-.success { color: #0f0 !important; text-shadow: 0 0 10px #0f0; }
-.error { color: #f00 !important; border-color: #f00 !important; text-shadow: 0 0 10px #f00; }
-
-/* Hiệu ứng nhấp nháy cho text */
-.blink { animation: blinker 1s linear infinite; }
-@keyframes blinker { 50% { opacity: 0; } }
-</style>
+        .shake { animation: shake 0.4s both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
 </head>
-
 <body>
 
 <canvas id="matrix-canvas"></canvas>
 
-<div class="hacker-box">
+<div class="hacker-box" id="mainBox">
     <h3>> SYSTEM_ACCESS</h3>
-    <input id="keyInput" placeholder="ENTER ACCESS KEY..." autocomplete="off">
+    
+    <input id="keyInput" type="text" placeholder="ENTER ACCESS KEY..." autocomplete="off">
+    
+    <label class="remember-me">
+        <input type="checkbox" id="autoLoginTick"> REMEMBER DEVICE & AUTO-LOGIN
+    </label>
+
     <button id="btnVerify" onclick="startVerify()">[ EXECUTE ]</button>
 
     <div class="progress-container" id="progress">
@@ -146,7 +93,7 @@ button:disabled { border-color: #050; color: #050; cursor: not-allowed; }
 </div>
 
 <script>
-// --- FIREBASE ---
+// 1. CONFIG FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
     databaseURL: "https://keyquocdat-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -154,258 +101,135 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database().ref("keys");
 
-// --- DEVICE ID ---
+// 2. MATRIX EFFECT (Rút gọn)
+const canvas = document.getElementById('matrix-canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
+const fontSize = 16;
+const columns = canvas.width / fontSize;
+const drops = Array(Math.floor(columns)).fill(1);
+let matrixColor = "#0f0";
+let matrixInterval = setInterval(() => {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = matrixColor;
+    ctx.font = fontSize + "px Courier New";
+    for (let i = 0; i < drops.length; i++) {
+        const text = characters.charAt(Math.floor(Math.random() * characters.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+    }
+}, 35);
+
+// 3. DEVICE ID & AUTO-FILL
 function getDeviceId() {
     let id = localStorage.getItem("deviceId");
     if (!id) {
-        id = "DEV-" + Math.random().toString(36).substr(2, 9);
+        id = "ID-" + Math.random().toString(36).substr(2, 9).toUpperCase();
         localStorage.setItem("deviceId", id);
     }
     return id;
 }
 
-// --- VERIFY START ---
+window.onload = () => {
+    // Nếu trước đó người dùng có tick "Remember", tự động điền và login
+    const savedKey = localStorage.getItem("lastUsedKey");
+    const autoLoginEnabled = localStorage.getItem("autoLoginEnabled");
+    
+    if (savedKey && autoLoginEnabled === "true") {
+        document.getElementById("keyInput").value = savedKey;
+        document.getElementById("autoLoginTick").checked = true;
+        // Tự động chạy verify sau 1s để người dùng kịp nhìn
+        setTimeout(startVerify, 1000);
+    }
+};
+
+// 4. LOGIC XÁC THỰC
 function startVerify() {
-    const box = document.querySelector('.hacker-box'); // Lấy box để rung
+    const box = document.getElementById('mainBox');
     const keyInput = document.getElementById("keyInput");
     const key = keyInput.value.trim().toUpperCase().replace(/\s+/g, "");
     const msg = document.getElementById("msg");
     const bar = document.getElementById("bar");
     const progress = document.getElementById("progress");
     const btn = document.getElementById("btnVerify");
+    const isRemember = document.getElementById("autoLoginTick").checked;
 
-    // Xóa hiệu ứng rung cũ nếu có
     box.classList.remove('shake');
-
-    // Kiểm tra nếu key trống
     if (!key) {
         msg.textContent = "> ERROR: KEY REQUIRED!";
         msg.className = "error";
-        
-        // Kích hoạt hiệu ứng rung
-        void box.offsetWidth; // Thủ thuật nhỏ để reset animation
-        box.classList.add('shake'); 
+        void box.offsetWidth; box.classList.add('shake');
         return;
     }
 
-    // Bắt đầu quá trình "Hack" giả lập
-    btn.disabled = true;
-    keyInput.disabled = true;
-    
-    bar.style.width = "0%";
-    progress.style.display = "block";
-    msg.textContent = "> DECRYPTING DATA...";
-    msg.className = "blink"; // Cho chữ nhấp nháy khi đang giải mã
+    btn.disabled = true; keyInput.disabled = true;
+    bar.style.width = "0%"; progress.style.display = "block";
+    msg.textContent = "> DECRYPTING..."; msg.className = "blink";
 
     let percent = 0;
-    const interval = setInterval(() => {
-        percent += 5;
-        bar.style.width = percent + "%";
-
+    const loadInt = setInterval(() => {
+        percent += 10; bar.style.width = percent + "%";
         if (percent >= 100) {
-            clearInterval(interval);
-            // Sau khi chạy xong thanh bar thì mới kiểm tra Database
-            verifyKeyInDatabase(key, msg, btn);
+            clearInterval(loadInt);
+            executeVerify(key, msg, btn, box, isRemember);
         }
-    }, 30);
+    }, 40);
 }
 
-// --- VERIFY LOGIC FULL ---
-function verifyKeyInDatabase(key, msg, btn) {
-    const ref = db.child(key);
+function executeVerify(key, msg, btn, box, isRemember) {
     const deviceId = getDeviceId();
-
-    ref.transaction((data) => {
-
+    
+    db.child(key).transaction((data) => {
         if (!data) return null;
 
-        // ===== KEY KHÓA THIẾT BỊ =====
+        // KIỂM TRA DEVICE (Nếu là key LOCKED)
         if (data.type && data.type.startsWith("LOCKED")) {
-
-            // gán device nếu chưa có
-            if (!data.device) {
-                data.device = deviceId;
-            }
-
-            // sai thiết bị
-            if (data.device !== deviceId) {
-                return;
-            }
-
-            // 1 lần
-            if (data.type.includes("ONCE")) {
-                if (data.used === true) return;
-                data.used = true;
-            }
-
-            // có hạn
-            if (data.type.includes("TIME")) {
-                if (Date.now() > data.expiresAt) return;
-            }
-
-            return data;
+            if (!data.device) data.device = deviceId;
+            else if (data.device !== deviceId) return undefined;
         }
 
-        // ===== KEY THƯỜNG =====
-        if (data.type === "ONCE") {
-            if (data.used === true) return;
+        // KIỂM TRA HẠN/LƯỢT DÙNG
+        if (data.type.includes("ONCE")) {
+            if (data.used && data.device !== deviceId) return undefined;
             data.used = true;
-            return data;
+        } else if (data.type.includes("TIME")) {
+            if (Date.now() > data.expiresAt) return undefined;
         }
 
-        if (data.type === "TIME") {
-            if (Date.now() > data.expiresAt) return;
-            return data;
-        }
-
-        if (data.type === "INFINITE") {
-            return data;
-        }
-
-        return;
-
+        return data;
     }, (error, committed, snapshot) => {
-
-        btn.disabled = false;
-        document.getElementById("keyInput").disabled = false;
-
-        if (error) {
-            msg.textContent = "> SERVER ERROR!";
+        if (error || !snapshot.exists() || !committed) {
+            msg.textContent = !snapshot.exists() ? "> KEY NOT FOUND!" : "> ACCESS DENIED!";
             msg.className = "error";
-        } 
-        else if (!snapshot.exists()) {
-            msg.textContent = "> KEY NOT FOUND!";
-            msg.className = "error";
-        } 
-        else if (!committed) {
-            msg.textContent = "> INVALID / USED / WRONG DEVICE!";
-            msg.className = "error";
-        } 
-        else {
-            msg.textContent = "> ACCESS GRANTED! REDIRECTING...";
+            box.classList.add('shake');
+            btn.disabled = false; document.getElementById("keyInput").disabled = false;
+            // Xóa auto login nếu bị lỗi key
+            localStorage.removeItem("autoLoginEnabled");
+        } else {
+            msg.textContent = "> ACCESS GRANTED!";
             msg.className = "success";
-
+            matrixColor = "#00ffcc";
+            
+            // Xử lý lưu hay không lưu theo Checkbox
+            if (isRemember) {
+                localStorage.setItem("autoLoginEnabled", "true");
+                localStorage.setItem("lastUsedKey", key);
+            } else {
+                localStorage.removeItem("autoLoginEnabled");
+                localStorage.removeItem("lastUsedKey");
+            }
+            
             localStorage.setItem("userVerified", "true");
-
-            setTimeout(() => {
-                window.location.href = "index.html";
-            }, 1000);
+            setTimeout(() => { window.location.href = "index.html"; }, 1500);
         }
-
     });
 }
 
-// ENTER KEY
-document.getElementById("keyInput").addEventListener("keypress", e => {
-    if (e.key === "Enter") startVerify();
-});
-
-// RESIZE CANVAS
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
-// --- MATRIX RAIN EFFECT ---
-const canvas = document.getElementById('matrix-canvas');
-const ctx = canvas.getContext('2d');
-
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-// Các ký tự sẽ rơi (có thể thay đổi thành số 0-1 nếu muốn kiểu nhị phân)
-const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
-const fontSize = 16;
-const columns = canvas.width / fontSize;
-
-// Khởi tạo mảng vị trí y cho mỗi cột
-const drops = [];
-for (let x = 0; x < columns; x++) {
-    drops[x] = 1;
-}
-
-// Biến điều khiển tốc độ/màu sắc nếu bạn muốn thay đổi lúc thành công
-let matrixSpeed = 35;
-let matrixColor = "#0f0"; 
-
-function drawMatrix() {
-    // Tạo lớp phủ mờ màu đen để tạo hiệu ứng vệt mờ (trail)
-    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = matrixColor; // Sử dụng biến để có thể đổi màu khi Access Granted
-    ctx.font = fontSize + "px Courier New";
-
-    for (let i = 0; i < drops.length; i++) {
-        const text = characters.charAt(Math.floor(Math.random() * characters.length));
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-            drops[i] = 0;
-        }
-        drops[i]++;
-    }
-}
-
-// Hàm khởi tạo loop
-let matrixInterval = setInterval(drawMatrix, matrixSpeed);
-
-// Cập nhật hàm createKey để tương tác với Matrix
-async function createKey() {
-    const keyInput = document.getElementById("keyInput");
-    const key = normalizeKey(keyInput.value);
-    const type = document.getElementById("keyType").value;
-    const days = parseInt(document.getElementById("daysInput").value);
-    const msg = document.getElementById("msg");
-
-    if (!key) {
-        msg.textContent = "> ERROR: KEY REQUIRED!";
-        msg.className = "error"; 
-        return;
-    }
-
-    keyInput.disabled = true;
-
-    let data = {
-        type: type,
-        createdAt: firebase.database.ServerValue.TIMESTAMP,
-        device: null
-    };
-
-    if (type.includes("ONCE")) data.used = false;
-    if (type.includes("TIME")) {
-        if (!days || days <= 0) {
-            msg.textContent = "> ERROR: INVALID DURATION!";
-            msg.className = "error";
-            keyInput.disabled = false;
-            return;
-        }
-        data.expiresAt = Date.now() + days * 86400000;
-    }
-
-    try {
-        await db.child(key).set(data);
-
-        // HIỆU ỨNG KHI THÀNH CÔNG:
-        matrixColor = "#00ffcc"; // Đổi sang màu xanh lơ sáng cho hiện đại
-        msg.textContent = `> KEY [${key}] CREATED! REDIRECTING...`;
-        msg.className = "success";
-        
-        localStorage.setItem("userVerified", "true");
-
-        // Tăng tốc độ rơi của Matrix để tạo cảm giác "vượt rào" thành công
-        clearInterval(matrixInterval);
-        matrixInterval = setInterval(drawMatrix, 15); 
-
-        setTimeout(() => {
-            window.location.href = "index.html";
-        }, 1200);
-
-    } catch (error) {
-        msg.textContent = "> SERVER CRITICAL ERROR!";
-        msg.className = "error";
-        keyInput.disabled = false;
-    }
-}
-// Chạy vòng lặp hiệu ứng
-setInterval(drawMatrix, 35);
+document.getElementById("keyInput").addEventListener("keypress", e => { if (e.key === "Enter") startVerify(); });
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 </script>
+</body>
+</html>
