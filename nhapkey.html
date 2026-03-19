@@ -3,210 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HỆ THỐNG BẢO MẬT | QUOCDAT SEC</title>
-    
+    <title>HỆ THỐNG XÁC THỰC</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
-        :root { --neon: #00ff41; --error: #ff3e3e; --glass: rgba(5, 5, 5, 0.95); }
-        * { margin: 0; padding: 0; box-sizing: border-box; cursor: crosshair; }
-        body { background: #000; color: var(--neon); font-family: 'Share Tech Mono', monospace; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        #matrix { position: fixed; top: 0; left: 0; z-index: 1; opacity: 0.15; }
+        :root { --hacker-green: #00ff41; --dark-bg: #000800; --error-red: #ff0000; }
+        * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace; }
+        body { margin: 0; padding: 0; background-color: var(--dark-bg); overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
 
-        /* Khung chính */
-        .box { position: relative; z-index: 10; width: 90%; max-width: 400px; background: var(--glass); border: 1px solid var(--neon); border-radius: 4px; padding: 30px; box-shadow: 0 0 20px rgba(0,255,65,0.2); transition: 0.3s; }
-        .shake { animation: shake 0.4s; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        #matrix-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.5; }
 
-        h2 { font-family: 'Orbitron'; font-size: 16px; text-align: center; margin-bottom: 25px; letter-spacing: 2px; text-shadow: 0 0 8px var(--neon); text-transform: uppercase; }
-        input { width: 100%; padding: 12px; margin-bottom: 12px; background: #000; border: 1px solid var(--neon); color: var(--neon); outline: none; font-family: 'Share Tech Mono'; font-size: 14px; }
-        input::placeholder { color: rgba(0, 255, 65, 0.3); }
-        
-        .options { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 20px; }
-        .chk-container { display: flex; align-items: center; cursor: pointer; color: var(--neon); }
-        .chk-container input { width: auto; margin-right: 8px; margin-bottom: 0; accent-color: var(--neon); }
-        .forgot-link { color: #888; text-decoration: underline; cursor: pointer; }
-        .forgot-link:hover { color: var(--neon); }
+        /* Khung Terminal */
+        .terminal-box { width: 95%; max-width: 420px; padding: 30px; background: rgba(0, 10, 0, 0.9); border: 1px solid var(--hacker-green); box-shadow: 0 0 20px rgba(0, 255, 65, 0.2); position: relative; z-index: 1; }
+        .terminal-box::before { content: " "; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 4px, 3px 100%; pointer-events: none; }
 
-        .btn { width: 100%; padding: 13px; background: transparent; border: 1px solid var(--neon); color: var(--neon); font-family: 'Orbitron'; font-weight: bold; cursor: pointer; margin-top: 5px; text-transform: uppercase; transition: 0.3s; }
-        .btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+        .tabs { display: flex; border-bottom: 1px solid #113311; margin-bottom: 25px; }
+        .tab { flex: 1; padding: 10px; text-align: center; color: #004400; cursor: pointer; font-size: 12px; font-weight: bold; border-bottom: 2px solid transparent; transition: 0.3s; }
+        .tab.active { color: var(--hacker-green); border-bottom-color: var(--hacker-green); text-shadow: 0 0 5px var(--hacker-green); }
 
-        .tabs { display: flex; margin-bottom: 20px; border: 1px solid #333; }
-        .tab { flex: 1; padding: 10px; text-align: center; font-size: 11px; cursor: pointer; background: #050505; color: #555; transition: 0.3s; }
-        .tab.active { background: var(--neon); color: #000; font-weight: bold; }
+        h3 { color: var(--hacker-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; font-size: 16px; text-align: center; }
 
-        /* HACKER MODAL (Thay thế Alert lỏ) */
-        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 999; }
-        #hacker-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); z-index: 1000; width: 320px; background: #050505; border: 2px solid var(--neon); box-shadow: 0 0 30px rgba(0, 255, 65, 0.4); padding: 25px; text-align: center; opacity: 0; transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
-        #hacker-modal.active { display: block; transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        .modal-scanner { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--neon); animation: modalScan 2s linear infinite; }
-        @keyframes modalScan { 0% { top: 0; } 100% { top: 100%; } }
-        #modal-text { font-size: 14px; margin: 15px 0; line-height: 1.5; min-height: 40px; }
+        .form-section { display: none; }
+        .form-section.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        #keyArea { display: none; }
-        .footer-link { text-align: center; font-size: 10px; margin-top: 20px; cursor: pointer; opacity: 0.5; color: #fff; }
+        input { width: 100%; padding: 12px; background: rgba(0, 20, 0, 0.5); border: 1px solid #004400; color: var(--hacker-green); font-size: 14px; outline: none; margin-bottom: 15px; }
+        input:focus { border-color: var(--hacker-green); box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
+
+        .options { display: flex; justify-content: space-between; font-size: 11px; color: #008800; margin-bottom: 15px; }
+        .chk-container { cursor: pointer; display: flex; align-items: center; }
+        .chk-container input { width: auto; margin: 0 5px 0 0; accent-color: var(--hacker-green); }
+
+        button { width: 100%; padding: 14px; background: transparent; border: 1px solid var(--hacker-green); color: var(--hacker-green); font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        button:hover { background: var(--hacker-green); color: #000; box-shadow: 0 0 15px var(--hacker-green); }
+
+        #msg { margin-top: 15px; font-size: 12px; color: var(--hacker-green); opacity: 0.8; }
+
+        /* Modal Thông báo Custom */
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; }
+        #hacker-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 101; width: 300px; background: #000; border: 2px solid var(--hacker-green); padding: 20px; text-align: center; box-shadow: 0 0 30px var(--hacker-green); }
+        .modal-scanner { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--hacker-green); animation: scan 2s linear infinite; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* Progress Bar */
+        .progress-container { margin-top: 15px; height: 4px; border: 1px solid #003300; display: none; }
+        .progress-bar { height: 100%; width: 0%; background: var(--hacker-green); box-shadow: 0 0 10px var(--hacker-green); }
     </style>
 </head>
 <body>
 
-<canvas id="matrix"></canvas>
+<canvas id="matrix-canvas"></canvas>
 
-<div id="modal-overlay" onclick="closeHackerModal()"></div>
+<div id="modal-overlay"></div>
 <div id="hacker-modal">
     <div class="modal-scanner"></div>
-    <div style="font-size: 9px; color: #555; text-align: left; margin-bottom: 10px;">[ THÔNG BÁO HỆ THỐNG ]</div>
-    <div id="modal-text">> ĐANG KHỞI CHẠY...</div>
-    <button class="btn" style="padding: 8px; font-size: 10px;" onclick="closeHackerModal()">[ ĐÃ HIỂU ]</button>
+    <div id="modal-text" style="color: var(--hacker-green); margin: 15px 0; font-size: 14px;"></div>
+    <button onclick="closeModal()" style="padding: 5px; font-size: 10px;">[ ĐÓNG ]</button>
 </div>
 
-<div class="box" id="mainBox">
-    <div id="authHeader">
-        <div class="tabs">
-            <div id="tL" class="tab active" onclick="tab('login')">ĐĂNG NHẬP</div>
-            <div id="tR" class="tab" onclick="tab('reg')">ĐĂNG KÝ</div>
-        </div>
-        
-        <div id="loginForm">
-            <input id="lU" placeholder="> TÊN ĐĂNG NHẬP">
-            <input id="lP" type="password" placeholder="> MẬT KHẨU">
-            <div class="options">
-                <label class="chk-container"><input type="checkbox" id="rememberMe"> TỰ ĐỘNG VÀO</label>
-                <span class="forgot-link" onclick="thongBao('VUI LÒNG LIÊN HỆ ADMIN ĐỂ RESET!')">QUÊN PASS?</span>
-            </div>
-            <button class="btn" onclick="login()">[ ĐĂNG NHẬP ]</button>
-        </div>
-
-        <div id="regForm" style="display:none;">
-            <input id="rU" placeholder="> TÊN TÀI KHOẢN MỚI">
-            <input id="rP" type="password" placeholder="> MẬT KHẨU MỚI">
-            <button class="btn" onclick="register()">[ KHỞI TẠO ]</button>
-        </div>
+<div class="terminal-box" id="mainBox">
+    <div id="authTabs" class="tabs">
+        <div class="tab active" id="tabL" onclick="switchTab('login')">ĐĂNG NHẬP</div>
+        <div class="tab" id="tabR" onclick="switchTab('reg')">ĐĂNG KÝ</div>
     </div>
 
-    <div id="keyArea">
-        <h2>XÁC THỰC KEY</h2>
-        <input id="keyIn" placeholder="> NHẬP MÃ TRUY CẬP">
-        <button class="btn" onclick="verifyKey()">[ GIẢI MÃ & VÀO ]</button>
-        <p class="footer-link" onclick="logout()">[ THOÁT TÀI KHOẢN ]</p>
+    <div id="sec-login" class="form-section active">
+        <h3>> SYSTEM_LOGIN</h3>
+        <input id="lU" placeholder="TÊN TÀI KHOẢN..." autocomplete="off">
+        <input id="lP" type="password" placeholder="MẬT KHẨU...">
+        <div class="options">
+            <label class="chk-container"><input type="checkbox" id="rem"> TỰ ĐỘNG VÀO</label>
+            <span style="text-decoration: underline; cursor:pointer" onclick="showNotice('LIÊN HỆ ADMIN ĐỂ RESET')">QUÊN MẬT KHẨU?</span>
+        </div>
+        <button onclick="handleLogin()">[ THỰC THI ĐĂNG NHẬP ]</button>
     </div>
+
+    <div id="sec-reg" class="form-section">
+        <h3>> INITIALIZE_ID</h3>
+        <input id="rU" placeholder="TÊN TÀI KHOẢN MỚI..." autocomplete="off">
+        <input id="rP" type="password" placeholder="MẬT KHẨU BẢO MẬT...">
+        <button onclick="handleRegister()">[ KHỞI TẠO TÀI KHOẢN ]</button>
+    </div>
+
+    <div id="sec-key" class="form-section">
+        <h3>> ACCESS_KEY_REQUIRED</h3>
+        <div id="userTag" style="color: #005500; font-size: 10px; margin-bottom: 10px; text-align: center;"></div>
+        <input id="kI" placeholder="NHẬP MÃ TRUY CẬP VIP..." autocomplete="off">
+        <button id="btnKey" onclick="handleVerify()">[ GIẢI MÃ & TRUY CẬP ]</button>
+        <div class="progress-container" id="pCont"><div class="progress-bar" id="pBar"></div></div>
+        <p onclick="logout()" style="color: #444; font-size: 9px; text-align: center; margin-top: 20px; cursor: pointer;">[ ĐĂNG XUẤT TÀI KHOẢN ]</p>
+    </div>
+
+    <div id="msg">root@system:~# awaiting_input...</div>
 </div>
 
 <script>
+    // --- FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
-        authDomain: "keyquocdat.firebaseapp.com",
-        databaseURL: "https://keyquocdat-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "keyquocdat",
-        storageBucket: "keyquocdat.firebasestorage.app",
-        messagingSenderId: "940819957535",
-        appId: "1:940819957535:web:6e8e9a4c9838740da3122a"
+        databaseURL: "https://keyquocdat-default-rtdb.asia-southeast1.firebasedatabase.app"
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Hiệu ứng Thông báo Hacker
-    function thongBao(text) {
-        const overlay = document.getElementById('modal-overlay');
-        const modal = document.getElementById('hacker-modal');
-        const textEl = document.getElementById('modal-text');
-        
-        overlay.style.display = 'block';
-        modal.classList.add('active');
-        
-        // Hiệu ứng chữ chạy
-        textEl.innerText = "";
-        let i = 0;
-        const txt = "> " + text;
-        function typeWriter() {
-            if (i < txt.length) {
-                textEl.innerText += txt.charAt(i);
-                i++;
-                setTimeout(typeWriter, 30);
-            }
-        }
-        typeWriter();
+    // --- UI LOGIC ---
+    function showNotice(txt) {
+        document.getElementById('modal-text').innerText = "> " + txt;
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('hacker-modal').style.display = 'block';
     }
-
-    function closeHackerModal() {
+    function closeModal() {
         document.getElementById('modal-overlay').style.display = 'none';
-        document.getElementById('hacker-modal').classList.remove('active');
+        document.getElementById('hacker-modal').style.display = 'none';
+    }
+    function switchTab(t) {
+        document.querySelectorAll('.form-section, .tab').forEach(el => el.classList.remove('active'));
+        if(t==='login') { document.getElementById('sec-login').classList.add('active'); document.getElementById('tabL').classList.add('active'); }
+        else { document.getElementById('sec-reg').classList.add('active'); document.getElementById('tabR').classList.add('active'); }
     }
 
-    // Matrix Rain
-    const c = document.getElementById('matrix'); const ctx = c.getContext('2d');
-    c.width = window.innerWidth; c.height = window.innerHeight;
-    const drops = Array(Math.floor(c.width/16)).fill(1);
-    setInterval(() => {
-        ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
-        ctx.fillStyle = "#0f0"; drops.forEach((y, i) => {
-            ctx.fillText(String.fromCharCode(Math.random()*128), i*16, y*16);
-            if(y*16 > c.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
-        });
-    }, 35);
-
-    function triggerShake() {
-        const box = document.getElementById('mainBox');
-        box.classList.add('shake');
-        setTimeout(() => box.classList.remove('shake'), 400);
-    }
-
-    function tab(type) {
-        document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
-        document.getElementById('regForm').style.display = type === 'reg' ? 'block' : 'none';
-        document.getElementById('tL').className = type === 'login' ? 'tab active' : 'tab';
-        document.getElementById('tR').className = type === 'reg' ? 'tab active' : 'tab';
-    }
-
-    function register() {
+    // --- AUTH LOGIC ---
+    function handleRegister() {
         const u = document.getElementById('rU').value.trim();
         const p = document.getElementById('rP').value.trim();
-        if(!u || !p) return triggerShake();
+        if(!u || !p) return showNotice("VUI LÒNG NHẬP ĐỦ THÔNG TIN");
         db.ref('users/'+u).once('value', s => {
-            if(s.exists()) { triggerShake(); thongBao("TÀI KHOẢN ĐÃ TỒN TẠI!"); }
-            else db.ref('users/'+u).set({p: p}).then(() => { thongBao("ĐĂNG KÝ THÀNH CÔNG!"); tab('login'); });
+            if(s.exists()) showNotice("TÀI KHOẢN ĐÃ TỒN TẠI");
+            else db.ref('users/'+u).set({p: p}).then(() => { showNotice("KHỞI TẠO THÀNH CÔNG"); switchTab('login'); });
         });
     }
 
-    function login() {
+    function handleLogin() {
         const u = document.getElementById('lU').value.trim();
         const p = document.getElementById('lP').value.trim();
-        if(!u || !p) return triggerShake();
         db.ref('users/'+u).once('value', s => {
             if(s.exists() && s.val().p === p) {
-                if(document.getElementById('rememberMe').checked) localStorage.setItem("auto", "1");
+                if(document.getElementById('rem').checked) localStorage.setItem("auto", "1");
                 localStorage.setItem("session", u);
-                showKey();
-                thongBao("ĐĂNG NHẬP THÀNH CÔNG!");
-            } else { triggerShake(); thongBao("SAI TÀI KHOẢN HOẶC MẬT KHẨU!"); }
+                enterKeySection(u);
+            } else showNotice("SAI THÔNG TIN ĐĂNG NHẬP");
         });
     }
 
-    function showKey() { document.getElementById('authHeader').style.display='none'; document.getElementById('keyArea').style.display='block'; }
+    function enterKeySection(u) {
+        document.getElementById('authTabs').style.display = 'none';
+        document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+        document.getElementById('sec-key').classList.add('active');
+        document.getElementById('userTag').innerText = "SESSION: " + u.toUpperCase();
+    }
 
-    function verifyKey() {
-        const k = document.getElementById('keyIn').value.trim().toUpperCase();
-        const user = localStorage.getItem("session");
-        if(!k) return triggerShake();
-        db.ref('keys/'+k).transaction(data => {
-            if(!data) return null;
-            if(data.type && data.type.includes("LOCKED")) {
-                if(!data.owner) data.owner = user;
-                else if(data.owner !== user) return undefined;
+    function handleVerify() {
+        const k = document.getElementById('kI').value.trim().toUpperCase();
+        const u = localStorage.getItem("session");
+        if(!k) return;
+
+        const pBar = document.getElementById('pBar');
+        document.getElementById('pCont').style.display = 'block';
+        document.getElementById('btnKey').disabled = true;
+        
+        let pc = 0;
+        const iv = setInterval(() => {
+            pc += 5; pBar.style.width = pc + "%";
+            if(pc >= 100) {
+                clearInterval(iv);
+                db.ref('keys/'+k).transaction(data => {
+                    if(!data) return null;
+                    if(data.type && data.type.includes("LOCKED")) {
+                        if(!data.owner) data.owner = u;
+                        else if(data.owner !== u) return undefined;
+                    }
+                    if(data.used && data.type.includes("ONCE")) return undefined;
+                    if(data.expiresAt && Date.now() > data.expiresAt) return undefined;
+                    if(data.type.includes("ONCE")) data.used = true;
+                    return data;
+                }, (err, ok, snap) => {
+                    document.getElementById('btnKey').disabled = false;
+                    if(ok && snap.exists()) { showNotice("TRUY CẬP ĐƯỢC CHẤP NHẬN!"); setTimeout(()=>window.location.href="index.html", 1000); }
+                    else showNotice("KEY KHÔNG HỢP LỆ HOẶC BỊ KHÓA");
+                });
             }
-            if(data.used && data.type.includes("ONCE")) return undefined;
-            if(data.expiresAt && Date.now() > data.expiresAt) return undefined;
-            if(data.type.includes("ONCE")) data.used = true;
-            return data;
-        }, (err, ok, snap) => {
-            if(ok && snap.exists()) { thongBao("KEY HỢP LỆ! ĐANG VÀO..."); setTimeout(()=>window.location.href="index.html", 1500); }
-            else { triggerShake(); thongBao("KEY KHÔNG HỢP LỆ HOẶC ĐÃ HẾT HẠN!"); }
-        });
+        }, 30);
     }
 
     function logout() { localStorage.clear(); location.reload(); }
-    window.onload = () => { if(localStorage.getItem("session") && localStorage.getItem("auto")) showKey(); };
+
+    // --- MATRIX EFFECT ---
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const drops = Array(Math.floor(canvas.width/16)).fill(1);
+    setInterval(() => {
+        ctx.fillStyle = 'rgba(0, 8, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0F0'; ctx.font = '15px monospace';
+        drops.forEach((y, i) => {
+            ctx.fillText(String.fromCharCode(Math.random()*128), i*16, y*16);
+            if(y*16 > canvas.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
+        });
+    }, 35);
+
+    window.onload = () => {
+        const s = localStorage.getItem("session");
+        if(s && localStorage.getItem("auto")) enterKeySection(s);
+    };
 </script>
 </body>
 </html>
