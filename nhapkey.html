@@ -3,216 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TERMINAL ACCESS | QUOCDAT SEC</title>
+    <title>HỆ THỐNG BẢO MẬT</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --neon: #00ff41; /* Màu Matrix chuẩn */
-            --neon-bg: rgba(0, 255, 65, 0.1);
-            --error: #ff3e3e;
-            --glass: rgba(5, 5, 5, 0.9);
-        }
-
+        :root { --neon: #00ff41; --error: #ff3e3e; --glass: rgba(5, 5, 5, 0.95); }
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: crosshair; }
+        body { background: #000; color: var(--neon); font-family: 'Share Tech Mono', monospace; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        #matrix { position: fixed; top: 0; left: 0; z-index: 1; opacity: 0.15; }
 
-        body {
-            background: #000;
-            color: var(--neon);
-            font-family: 'Share Tech Mono', monospace;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
+        .box { position: relative; z-index: 10; width: 90%; max-width: 400px; background: var(--glass); border: 1px solid var(--neon); border-radius: 4px; padding: 30px; box-shadow: 0 0 20px rgba(0,255,65,0.2); }
+        
+        /* Hiệu ứng Rung khi sai */
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
         }
 
-        #matrix {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            opacity: 0.25;
-        }
+        h2 { font-family: 'Orbitron'; font-size: 16px; text-align: center; margin-bottom: 25px; letter-spacing: 2px; text-shadow: 0 0 8px var(--neon); text-transform: uppercase; }
+        
+        input { width: 100%; padding: 12px; margin-bottom: 12px; background: #000; border: 1px solid var(--neon); color: var(--neon); outline: none; font-family: 'Share Tech Mono'; font-size: 14px; }
+        input::placeholder { color: rgba(0, 255, 65, 0.3); }
+        
+        /* Tùy chọn Ghi nhớ & Quên pass */
+        .options { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 20px; }
+        .chk-container { display: flex; align-items: center; cursor: pointer; color: var(--neon); }
+        .chk-container input { width: auto; margin-right: 8px; margin-bottom: 0; accent-color: var(--neon); }
+        .forgot-link { color: #888; text-decoration: underline; cursor: pointer; }
+        .forgot-link:hover { color: var(--neon); }
 
-        /* Container chính */
-        .box {
-            position: relative;
-            z-index: 10;
-            width: 90%;
-            max-width: 420px;
-            background: var(--glass);
-            border: 2px solid var(--neon);
-            border-radius: 5px;
-            padding: 40px 30px;
-            box-shadow: 0 0 20px var(--neon-bg), inset 0 0 10px var(--neon-bg);
-            backdrop-filter: blur(10px);
-            text-align: center;
-        }
+        .btn { width: 100%; padding: 13px; background: transparent; border: 1px solid var(--neon); color: var(--neon); font-family: 'Orbitron'; font-weight: bold; cursor: pointer; margin-top: 5px; text-transform: uppercase; transition: 0.3s; }
+        .btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
 
-        /* Hiệu ứng quét dòng điện tử */
-        .box::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: var(--neon);
-            box-shadow: 0 0 15px var(--neon);
-            animation: scanLine 4s linear infinite;
-            z-index: 11;
-        }
+        .tabs { display: flex; margin-bottom: 20px; border: 1px solid #333; }
+        .tab { flex: 1; padding: 10px; text-align: center; font-size: 11px; cursor: pointer; background: #050505; color: #555; transition: 0.3s; }
+        .tab.active { background: var(--neon); color: #000; font-weight: bold; }
 
-        @keyframes scanLine {
-            0% { top: 0; }
-            100% { top: 100%; }
-        }
-
-        h2 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            letter-spacing: 3px;
-            margin-bottom: 30px;
-            text-transform: uppercase;
-            text-shadow: 0 0 10px var(--neon);
-        }
-
-        /* Tab Switch */
-        .tabs {
-            display: flex;
-            margin-bottom: 25px;
-            border: 1px solid var(--neon);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            color: #333;
-            background: #000;
-            transition: 0.3s;
-        }
-
-        .tab.active {
-            background: var(--neon);
-            color: #000;
-        }
-
-        /* Input Styles */
-        input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid var(--neon);
-            color: var(--neon);
-            outline: none;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 14px;
-            box-shadow: inset 0 0 5px var(--neon-bg);
-        }
-
-        input::placeholder { color: rgba(0, 255, 65, 0.4); }
-
-        /* Button Styles */
-        .btn {
-            width: 100%;
-            padding: 15px;
-            background: transparent;
-            border: 1px solid var(--neon);
-            color: var(--neon);
-            font-family: 'Orbitron', sans-serif;
-            font-weight: bold;
-            font-size: 13px;
-            text-transform: uppercase;
-            transition: 0.4s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn:hover {
-            background: var(--neon);
-            color: #000;
-            box-shadow: 0 0 25px var(--neon);
-        }
-
-        /* Hacker Notification Modal */
-        #hacker-alert {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            background: #000;
-            border: 2px solid var(--neon);
-            padding: 25px;
-            z-index: 100;
-            width: 300px;
-            text-align: center;
-            box-shadow: 0 0 50px #000;
-            transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-        }
-
-        #hacker-alert.show { transform: translate(-50%, -50%) scale(1); }
-
-        #hacker-alert.error { border-color: var(--error); color: var(--error); }
-        #hacker-alert.error .alert-btn { border-color: var(--error); color: var(--error); }
-
-        .alert-btn {
-            margin-top: 20px;
-            padding: 8px 20px;
-            background: transparent;
-            border: 1px solid var(--neon);
-            color: var(--neon);
-            font-size: 12px;
-            font-weight: bold;
+        /* Cửa sổ Khôi phục */
+        #modal-reset {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 320px; background: #000; border: 2px solid var(--neon); padding: 25px; z-index: 100; box-shadow: 0 0 50px #000;
         }
 
         #keyArea { display: none; }
+        .footer-link { text-align: center; font-size: 10px; margin-top: 20px; cursor: pointer; opacity: 0.5; color: #fff; }
+        .footer-link:hover { opacity: 1; color: var(--neon); }
     </style>
 </head>
 <body>
 
 <canvas id="matrix"></canvas>
 
-<div id="hacker-alert">
-    <div id="alert-msg">SYSTEM MESSAGE</div>
-    <button class="btn alert-btn" onclick="closeAlert()">[ DISMISS ]</button>
+<div id="modal-reset">
+    <h3 style="font-size: 14px; margin-bottom: 15px; color: var(--neon)">> GIAO THỨC KHÔI PHỤC</h3>
+    <input id="resetUser" placeholder="NHẬP TÊN TÀI KHOẢN">
+    <p style="font-size: 9px; color: #666; margin-bottom: 15px;">* Yêu cầu sẽ được gửi tới Quản trị viên hệ thống.</p>
+    <button class="btn" onclick="sendResetRequest()">[ GỬI YÊU CẦU ]</button>
+    <button class="btn" onclick="closeReset()" style="border:none; font-size:10px;">[ HỦY BỎ ]</button>
 </div>
 
-<div class="box">
+<div class="box" id="mainBox">
     <div id="authHeader">
         <div class="tabs">
-            <div class="tab active" id="tL" onclick="tab('login')">USER_LOGIN</div>
-            <div class="tab" id="tR" onclick="tab('reg')">CREATE_ID</div>
+            <div id="tL" class="tab active" onclick="tab('login')">ĐĂNG NHẬP</div>
+            <div id="tR" class="tab" onclick="tab('reg')">ĐĂNG KÝ</div>
         </div>
         
         <div id="loginForm">
-            <input id="lU" placeholder="> USERNAME">
-            <input id="lP" type="password" placeholder="> PASSWORD">
-            <button class="btn" onclick="login()">[ EXECUTE_LOGIN ]</button>
+            <input id="lU" placeholder="> TÊN ĐĂNG NHẬP">
+            <input id="lP" type="password" placeholder="> MẬT KHẨU">
+            <div class="options">
+                <label class="chk-container">
+                    <input type="checkbox" id="rememberMe"> TỰ ĐỘNG ĐĂNG NHẬP
+                </label>
+                <span class="forgot-link" onclick="openReset()">QUÊN MẬT KHẨU?</span>
+            </div>
+            <button class="btn" onclick="login()">[ THỰC THI ĐĂNG NHẬP ]</button>
         </div>
 
         <div id="regForm" style="display:none;">
-            <input id="rU" placeholder="> NEW_USERNAME">
-            <input id="rP" type="password" placeholder="> SECRET_PASS">
-            <button class="btn" onclick="register()">[ INITIALIZE_ID ]</button>
+            <input id="rU" placeholder="> TÊN TÀI KHOẢN MỚI">
+            <input id="rP" type="password" placeholder="> MẬT KHẨU BẢO MẬT">
+            <button class="btn" onclick="register()">[ KHỞI TẠO DANH TÍNH ]</button>
         </div>
     </div>
 
     <div id="keyArea">
-        <h2>ACCESS_REQUIRED</h2>
-        <div style="font-size: 10px; margin-bottom: 20px; color: rgba(0,255,65,0.6)">VALIDATING ENCRYPTED KEYS...</div>
-        <input id="keyIn" placeholder="> ENTER_VIP_KEY">
-        <button class="btn" onclick="verifyKey()">[ DECRYPT_&_ACCESS ]</button>
-        <button class="btn" onclick="logout()" style="border:none; margin-top:15px; font-size:10px; opacity:0.5">[ ABORT_SESSION ]</button>
+        <h2>XÁC THỰC BẢN QUYỀN</h2>
+        <div id="userGreeting" style="text-align:center; font-size:11px; margin-bottom:15px; color:#888;"></div>
+        <input id="keyIn" placeholder="> NHẬP MÃ TRUY CẬP VIP">
+        <button class="btn" onclick="verifyKey()">[ GIẢI MÃ & TRUY CẬP ]</button>
+        <p class="footer-link" onclick="logout()">[ ĐĂNG XUẤT TÀI KHOẢN ]</p>
     </div>
 </div>
 
 <script>
+    // Dán bộ FirebaseConfig của bạn vào đây
     const firebaseConfig = {
         apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
         authDomain: "keyquocdat.firebaseapp.com",
@@ -225,41 +116,28 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Matrix Background Animation
+    // Hiệu ứng Mưa mã trận (Matrix Rain)
     const c = document.getElementById('matrix'); const ctx = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
-    const chars = "01010101010101010101010101010101ABCDEF-SEC-QD";
     const drops = Array(Math.floor(c.width/16)).fill(1);
-    
     function draw() {
         ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
         ctx.fillStyle = "#0f0"; ctx.font = "15px monospace";
         drops.forEach((y, i) => {
-            const text = chars[Math.floor(Math.random()*chars.length)];
-            ctx.fillText(text, i*16, y*16);
+            ctx.fillText(String.fromCharCode(Math.random()*128), i*16, y*16);
             if(y*16 > c.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
         });
     }
     setInterval(draw, 35);
 
-    // Custom Alert Logic
-    function showAlert(msg, type = 'success') {
-        const alertBox = document.getElementById('hacker-alert');
-        const msgBox = document.getElementById('alert-msg');
-        msgBox.innerHTML = `> ${msg}`;
-        alertBox.className = type === 'error' ? 'show error' : 'show';
-        if (navigator.vibrate) navigator.vibrate(type === 'error' ? [100, 50, 100] : 50);
+    // Hiệu ứng rung khi lỗi
+    function triggerShake() {
+        const box = document.getElementById('mainBox');
+        box.classList.add('shake');
+        setTimeout(() => box.classList.remove('shake'), 400);
     }
 
-    function closeAlert() { document.getElementById('hacker-alert').classList.remove('show'); }
-
-    // logic
-    function getID() {
-        let id = localStorage.getItem("did");
-        if(!id) { id = "ID-"+Math.random().toString(36).substr(2,7).toUpperCase(); localStorage.setItem("did", id); }
-        return id;
-    }
-
+    // Chuyển Tab
     function tab(type) {
         document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
         document.getElementById('regForm').style.display = type === 'reg' ? 'block' : 'none';
@@ -267,65 +145,112 @@
         document.getElementById('tR').className = type === 'reg' ? 'tab active' : 'tab';
     }
 
+    // Đăng ký
     function register() {
         const u = document.getElementById('rU').value.trim();
         const p = document.getElementById('rP').value.trim();
-        if(!u || !p) return showAlert("EMPTY FIELDS DETECTED!", "error");
+        if(!u || !p) return triggerShake();
         db.ref('users/'+u).once('value', s => {
-            if(s.exists()) showAlert("USER ALREADY IN DATABASE", "error");
-            else db.ref('users/'+u).set({p: p, d: getID()}).then(() => { 
-                showAlert("IDENTITY CREATED SUCCESS"); tab('login'); 
-            });
+            if(s.exists()) {
+                alert("LỖI: TÀI KHOẢN ĐÃ TỒN TẠI TRÊN HỆ THỐNG!");
+                triggerShake();
+            } else {
+                db.ref('users/'+u).set({p: p, createdAt: Date.now()}).then(() => { 
+                    alert("THÀNH CÔNG: DANH TÍNH ĐÃ ĐƯỢC KHỞI TẠO!"); 
+                    tab('login'); 
+                });
+            }
         });
     }
 
+    // Đăng nhập
     function login() {
         const u = document.getElementById('lU').value.trim();
         const p = document.getElementById('lP').value.trim();
+        const remember = document.getElementById('rememberMe').checked;
+
         db.ref('users/'+u).once('value', s => {
             if(s.exists() && s.val().p === p) {
+                if(remember) localStorage.setItem("auto_login", "true");
                 localStorage.setItem("session", u);
-                document.getElementById('authHeader').style.display = 'none';
-                document.getElementById('keyArea').style.display = 'block';
-                showAlert("LOGIN SUCCESS. READY TO DECRYPT.");
-            } else showAlert("ACCESS DENIED: WRONG CREDENTIALS", "error");
+                showKeyArea();
+            } else {
+                triggerShake();
+                alert("TRUY CẬP BỊ TỪ CHỐI: SAI THÔNG TIN!");
+            }
         });
     }
 
+    // Hiển thị phần nhập Key
+    function showKeyArea() {
+        const user = localStorage.getItem("session");
+        document.getElementById('authHeader').style.display = 'none';
+        document.getElementById('keyArea').style.display = 'block';
+        document.getElementById('userGreeting').innerText = "HỆ THỐNG ĐANG ĐỢI: " + user.toUpperCase();
+    }
+
+    // Xác thực Key
     function verifyKey() {
         const k = document.getElementById('keyIn').value.trim().toUpperCase();
-        const did = getID();
-        if(!k) return showAlert("ENTER ACCESS KEY!", "error");
+        const user = localStorage.getItem("session");
+        if(!k) return triggerShake();
 
         db.ref('keys/'+k).transaction(data => {
             if(!data) return null;
+            
+            // Khóa theo tài khoản
             if(data.type && data.type.includes("LOCKED")) {
-                if(!data.device) data.device = did;
-                else if(data.device !== did) return undefined;
+                if(!data.owner) data.owner = user;
+                else if(data.owner !== user) return undefined;
             }
-            if(data.used && data.type && data.type.includes("ONCE")) return undefined;
+            
+            // Kiểm tra hạn dùng & trạng thái
+            if(data.used && data.type.includes("ONCE")) return undefined;
             if(data.expiresAt && Date.now() > data.expiresAt) return undefined;
-            if(data.type && data.type.includes("ONCE")) data.used = true;
+            
+            // Đánh dấu đã dùng nếu là key 1 lần
+            if(data.type.includes("ONCE")) data.used = true;
             return data;
         }, (err, ok, snap) => {
             if(ok && snap.exists()) { 
-                showAlert("KEY VALIDATED. REDIRECTING..."); 
-                setTimeout(() => window.location.href="index.html", 1500);
+                alert("XÁC THỰC THÀNH CÔNG! ĐANG CHUYỂN HƯỚNG..."); 
+                window.location.href="index.html"; 
             }
-            else showAlert("INVALID_KEY_OR_LOCKED_HWID", "error");
+            else { 
+                triggerShake(); 
+                alert("LỖI: MÃ TRUY CẬP KHÔNG HỢP LỆ HOẶC ĐÃ HẾT HẠN!"); 
+            }
         });
     }
 
-    function logout() {
-        localStorage.clear();
-        location.reload();
+    // Quản lý mật khẩu
+    function openReset() { document.getElementById('modal-reset').style.display = 'block'; }
+    function closeReset() { document.getElementById('modal-reset').style.display = 'none'; }
+    
+    function sendResetRequest() {
+        const u = document.getElementById('resetUser').value.trim();
+        if(!u) return;
+        db.ref('reset_requests/'+u).set({
+            time: Date.now(), 
+            status: "Chờ xử lý",
+            msg: "Yêu cầu đặt lại mật khẩu từ người dùng"
+        }).then(() => {
+            alert("YÊU CẦU ĐÃ ĐƯỢC GỬI! VUI LÒNG LIÊN HỆ ADMIN ĐỂ HOÀN TẤT.");
+            closeReset();
+        });
     }
 
-    window.onload = () => { 
-        if(localStorage.getItem("session")) { 
-            document.getElementById('authHeader').style.display='none'; 
-            document.getElementById('keyArea').style.display='block'; 
-        } 
+    // Đăng xuất
+    function logout() { 
+        localStorage.clear(); 
+        location.reload(); 
+    }
+
+    // Tự động vào nếu có phiên làm việc
+    window.onload = () => {
+        const session = localStorage.getItem("session");
+        const auto = localStorage.getItem("auto_login");
+        if(session && auto === "true") showKeyArea();
     };
 </script>
 </body>
