@@ -2,50 +2,213 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Security Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERMINAL ACCESS | QUOCDAT SEC</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
     <style>
-        * { box-sizing: border-box; }
-        body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: sans-serif; }
-        #matrix { position: fixed; top:0; left:0; z-index:1; opacity:0.3; }
-        .box { position: relative; z-index: 2; width: 350px; background: rgba(10,10,10,0.95); border: 1px solid #0f0; border-radius: 15px; padding: 30px; box-shadow: 0 0 20px #0f03; }
-        h2 { color: #0f0; text-align: center; font-size: 18px; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin-bottom: 12px; background: #111; border: 1px solid #333; color: #0f0; outline: none; border-radius: 5px; }
-        .btn { width: 100%; padding: 12px; background: transparent; border: 1px solid #0f0; color: #0f0; cursor: pointer; font-weight: bold; border-radius: 5px; }
-        .btn:hover { background: #0f0; color: #000; }
-        .tabs { display: flex; border-bottom: 1px solid #222; margin-bottom: 20px; }
-        .tab { flex: 1; padding: 10px; text-align: center; color: #444; cursor: pointer; font-size: 12px; }
-        .tab.active { color: #0f0; border-bottom: 2px solid #0f0; }
-        #keyArea { display: none; text-align: center; }
+        :root {
+            --neon: #00ff41; /* Màu Matrix chuẩn */
+            --neon-bg: rgba(0, 255, 65, 0.1);
+            --error: #ff3e3e;
+            --glass: rgba(5, 5, 5, 0.9);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: crosshair; }
+
+        body {
+            background: #000;
+            color: var(--neon);
+            font-family: 'Share Tech Mono', monospace;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #matrix {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0.25;
+        }
+
+        /* Container chính */
+        .box {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 420px;
+            background: var(--glass);
+            border: 2px solid var(--neon);
+            border-radius: 5px;
+            padding: 40px 30px;
+            box-shadow: 0 0 20px var(--neon-bg), inset 0 0 10px var(--neon-bg);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        /* Hiệu ứng quét dòng điện tử */
+        .box::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--neon);
+            box-shadow: 0 0 15px var(--neon);
+            animation: scanLine 4s linear infinite;
+            z-index: 11;
+        }
+
+        @keyframes scanLine {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px var(--neon);
+        }
+
+        /* Tab Switch */
+        .tabs {
+            display: flex;
+            margin-bottom: 25px;
+            border: 1px solid var(--neon);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+            background: #000;
+            transition: 0.3s;
+        }
+
+        .tab.active {
+            background: var(--neon);
+            color: #000;
+        }
+
+        /* Input Styles */
+        input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            outline: none;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            box-shadow: inset 0 0 5px var(--neon-bg);
+        }
+
+        input::placeholder { color: rgba(0, 255, 65, 0.4); }
+
+        /* Button Styles */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: transparent;
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: 13px;
+            text-transform: uppercase;
+            transition: 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            background: var(--neon);
+            color: #000;
+            box-shadow: 0 0 25px var(--neon);
+        }
+
+        /* Hacker Notification Modal */
+        #hacker-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: #000;
+            border: 2px solid var(--neon);
+            padding: 25px;
+            z-index: 100;
+            width: 300px;
+            text-align: center;
+            box-shadow: 0 0 50px #000;
+            transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        #hacker-alert.show { transform: translate(-50%, -50%) scale(1); }
+
+        #hacker-alert.error { border-color: var(--error); color: var(--error); }
+        #hacker-alert.error .alert-btn { border-color: var(--error); color: var(--error); }
+
+        .alert-btn {
+            margin-top: 20px;
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #keyArea { display: none; }
     </style>
 </head>
 <body>
 
 <canvas id="matrix"></canvas>
 
+<div id="hacker-alert">
+    <div id="alert-msg">SYSTEM MESSAGE</div>
+    <button class="btn alert-btn" onclick="closeAlert()">[ DISMISS ]</button>
+</div>
+
 <div class="box">
     <div id="authHeader">
         <div class="tabs">
-            <div class="tab active" id="tL" onclick="tab('login')">LOGIN</div>
-            <div class="tab" id="tR" onclick="tab('reg')">REGISTER</div>
+            <div class="tab active" id="tL" onclick="tab('login')">USER_LOGIN</div>
+            <div class="tab" id="tR" onclick="tab('reg')">CREATE_ID</div>
         </div>
+        
         <div id="loginForm">
-            <input id="lU" placeholder="USERNAME">
-            <input id="lP" type="password" placeholder="PASSWORD">
-            <button class="btn" onclick="login()">[ EXECUTE ]</button>
+            <input id="lU" placeholder="> USERNAME">
+            <input id="lP" type="password" placeholder="> PASSWORD">
+            <button class="btn" onclick="login()">[ EXECUTE_LOGIN ]</button>
         </div>
+
         <div id="regForm" style="display:none;">
-            <input id="rU" placeholder="NEW USER">
-            <input id="rP" type="password" placeholder="PASS">
-            <button class="btn" onclick="register()">[ INITIALIZE ]</button>
+            <input id="rU" placeholder="> NEW_USERNAME">
+            <input id="rP" type="password" placeholder="> SECRET_PASS">
+            <button class="btn" onclick="register()">[ INITIALIZE_ID ]</button>
         </div>
     </div>
 
     <div id="keyArea">
-        <h2>LICENSE_REQUIRED</h2>
-        <input id="keyIn" placeholder="ENTER ACCESS KEY">
-        <button class="btn" onclick="verifyKey()">[ VERIFY ]</button>
+        <h2>ACCESS_REQUIRED</h2>
+        <div style="font-size: 10px; margin-bottom: 20px; color: rgba(0,255,65,0.6)">VALIDATING ENCRYPTED KEYS...</div>
+        <input id="keyIn" placeholder="> ENTER_VIP_KEY">
+        <button class="btn" onclick="verifyKey()">[ DECRYPT_&_ACCESS ]</button>
+        <button class="btn" onclick="logout()" style="border:none; margin-top:15px; font-size:10px; opacity:0.5">[ ABORT_SESSION ]</button>
     </div>
 </div>
 
@@ -62,18 +225,35 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Matrix Background
+    // Matrix Background Animation
     const c = document.getElementById('matrix'); const ctx = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
+    const chars = "01010101010101010101010101010101ABCDEF-SEC-QD";
     const drops = Array(Math.floor(c.width/16)).fill(1);
-    setInterval(() => {
+    
+    function draw() {
         ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
-        ctx.fillStyle = "#0f0"; drops.forEach((y, i) => {
-            ctx.fillText(String.fromCharCode(Math.random()*128), i*16, y*16);
+        ctx.fillStyle = "#0f0"; ctx.font = "15px monospace";
+        drops.forEach((y, i) => {
+            const text = chars[Math.floor(Math.random()*chars.length)];
+            ctx.fillText(text, i*16, y*16);
             if(y*16 > c.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
         });
-    }, 35);
+    }
+    setInterval(draw, 35);
 
+    // Custom Alert Logic
+    function showAlert(msg, type = 'success') {
+        const alertBox = document.getElementById('hacker-alert');
+        const msgBox = document.getElementById('alert-msg');
+        msgBox.innerHTML = `> ${msg}`;
+        alertBox.className = type === 'error' ? 'show error' : 'show';
+        if (navigator.vibrate) navigator.vibrate(type === 'error' ? [100, 50, 100] : 50);
+    }
+
+    function closeAlert() { document.getElementById('hacker-alert').classList.remove('show'); }
+
+    // logic
     function getID() {
         let id = localStorage.getItem("did");
         if(!id) { id = "ID-"+Math.random().toString(36).substr(2,7).toUpperCase(); localStorage.setItem("did", id); }
@@ -90,10 +270,12 @@
     function register() {
         const u = document.getElementById('rU').value.trim();
         const p = document.getElementById('rP').value.trim();
-        if(!u || !p) return;
+        if(!u || !p) return showAlert("EMPTY FIELDS DETECTED!", "error");
         db.ref('users/'+u).once('value', s => {
-            if(s.exists()) alert("Đã tồn tại!");
-            else db.ref('users/'+u).set({p: p, d: getID()}).then(() => { alert("OK!"); tab('login'); });
+            if(s.exists()) showAlert("USER ALREADY IN DATABASE", "error");
+            else db.ref('users/'+u).set({p: p, d: getID()}).then(() => { 
+                showAlert("IDENTITY CREATED SUCCESS"); tab('login'); 
+            });
         });
     }
 
@@ -105,31 +287,46 @@
                 localStorage.setItem("session", u);
                 document.getElementById('authHeader').style.display = 'none';
                 document.getElementById('keyArea').style.display = 'block';
-            } else alert("Sai!");
+                showAlert("LOGIN SUCCESS. READY TO DECRYPT.");
+            } else showAlert("ACCESS DENIED: WRONG CREDENTIALS", "error");
         });
     }
 
     function verifyKey() {
         const k = document.getElementById('keyIn').value.trim().toUpperCase();
         const did = getID();
+        if(!k) return showAlert("ENTER ACCESS KEY!", "error");
+
         db.ref('keys/'+k).transaction(data => {
             if(!data) return null;
-            if(data.type.includes("LOCKED")) {
+            if(data.type && data.type.includes("LOCKED")) {
                 if(!data.device) data.device = did;
                 else if(data.device !== did) return undefined;
             }
-            if(data.used && data.type.includes("ONCE")) return undefined;
+            if(data.used && data.type && data.type.includes("ONCE")) return undefined;
             if(data.expiresAt && Date.now() > data.expiresAt) return undefined;
-            if(data.type.includes("ONCE")) data.used = true;
+            if(data.type && data.type.includes("ONCE")) data.used = true;
             return data;
         }, (err, ok, snap) => {
-            if(ok && snap.exists()) { alert("ACCESS GRANTED!"); window.location.href="index.html"; }
-            else alert("KEY LỖI/HẾT HẠN/SAI MÁY!");
+            if(ok && snap.exists()) { 
+                showAlert("KEY VALIDATED. REDIRECTING..."); 
+                setTimeout(() => window.location.href="index.html", 1500);
+            }
+            else showAlert("INVALID_KEY_OR_LOCKED_HWID", "error");
         });
     }
 
-    window.onload = () => { if(localStorage.getItem("session")) { document.getElementById('authHeader').style.display='none'; document.getElementById('keyArea').style.display='block'; } };
+    function logout() {
+        localStorage.clear();
+        location.reload();
+    }
+
+    window.onload = () => { 
+        if(localStorage.getItem("session")) { 
+            document.getElementById('authHeader').style.display='none'; 
+            document.getElementById('keyArea').style.display='block'; 
+        } 
+    };
 </script>
 </body>
-                                                                 </html>
-    
+</html>
