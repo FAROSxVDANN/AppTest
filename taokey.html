@@ -3,78 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - keyquocdat System</title>
+    <title>QUOCDAT SEC | Hệ Thống Xác Thực</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --neon: #0f0; --bg: #0a0a0a; --card: #151515; }
-        * { box-sizing: border-box; transition: all 0.3s ease; }
-        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        :root { --neon: #0f0; --blue: #00b8ff; --bg: #000; }
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: 0.3s; }
+        body { background: var(--bg); color: #fff; font-family: 'Roboto', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         
-        .card { background: var(--card); padding: 25px; border: 1px solid #333; border-radius: 15px; width: 100%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .card:hover { border-color: var(--neon); box-shadow: 0 0 20px rgba(0,255,0,0.1); }
+        #matrix-canvas { position: fixed; top: 0; left: 0; z-index: 1; opacity: 0.3; }
+
+        .main-box { position: relative; z-index: 2; width: 95%; max-width: 400px; background: rgba(10, 10, 10, 0.95); border: 1px solid #333; border-radius: 20px; overflow: hidden; box-shadow: 0 0 30px rgba(0, 255, 0, 0.1); }
+        .main-box:hover { border-color: var(--neon); box-shadow: 0 0 40px rgba(0, 255, 0, 0.2); }
+
+        .tabs { display: flex; background: #050505; border-bottom: 1px solid #222; }
+        .tab { flex: 1; padding: 15px; text-align: center; font-family: 'Orbitron'; font-size: 12px; cursor: pointer; color: #555; border-bottom: 2px solid transparent; }
+        .tab.active { color: var(--neon); border-bottom-color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+
+        .content { padding: 30px; }
+        .form-group { display: none; animation: fadeIn 0.5s ease; }
+        .form-group.active { display: block; }
+
+        h2 { font-family: 'Orbitron'; text-align: center; font-size: 18px; margin-bottom: 20px; letter-spacing: 2px; color: var(--neon); }
         
-        h2 { text-align: center; color: var(--neon); letter-spacing: 2px; font-size: 20px; margin-bottom: 20px; text-transform: uppercase; }
-        
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #333; color: #fff; outline: none; border-radius: 8px; }
-        input:focus, select:focus { border-color: var(--neon); }
-        
-        button { cursor: pointer; font-weight: bold; background: #000; color: var(--neon); border: 1px solid var(--neon); }
-        button:hover { background: var(--neon); color: #000; transform: translateY(-2px); }
-        
-        .table-container { width: 100%; max-width: 900px; margin-top: 30px; background: var(--card); border-radius: 15px; border: 1px solid #333; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #222; font-size: 14px; }
-        th { background: #000; color: #888; text-transform: uppercase; font-size: 11px; }
-        
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .available { background: rgba(0, 255, 0, 0.1); color: #0f0; }
-        .used { background: rgba(255, 165, 0, 0.1); color: #ffa500; }
-        
-        .owner-text { font-family: 'Courier New', monospace; color: #00b8ff; font-weight: bold; }
-        .btn-del { background: rgba(255, 69, 58, 0.1); color: #ff453a; border: 1px solid #ff453a; padding: 5px 12px; border-radius: 6px; }
-        .btn-del:hover { background: #ff453a; color: #fff; }
+        input { width: 100%; padding: 14px; background: #111; border: 1px solid #333; border-radius: 10px; color: #fff; margin-bottom: 15px; outline: none; font-family: monospace; }
+        input:focus { border-color: var(--neon); background: #151515; }
+
+        .btn { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--neon); color: var(--neon); font-family: 'Orbitron'; font-weight: bold; border-radius: 10px; cursor: pointer; text-transform: uppercase; }
+        .btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 20px var(--neon); }
+
+        .status { text-align: center; margin-top: 15px; font-size: 12px; min-height: 18px; color: #888; }
+        .success { color: #0f0 !important; }
+        .error { color: #ff453a !important; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>KEY_MANAGER_V2</h2>
-    <input id="keyInput" placeholder="Tên Key (Vd: VIP-ABC)">
-    
-    <select id="keyType" onchange="toggleDays()">
-        <option value="ONCE">Dùng 1 lần - Tự do</option>
-        <option value="TIME">Theo ngày - Tự do</option>
-        <option value="INFINITE">Vĩnh viễn - Tự do</option>
-        <option value="LOCKED_ONCE">1 lần - KHÓA TÀI KHOẢN</option>
-        <option value="LOCKED_TIME">Theo ngày - KHÓA TÀI KHOẢN</option>
-        <option value="LOCKED_INFINITE">Vĩnh viễn - KHÓA TÀI KHOẢN</option>
-    </select>
+<canvas id="matrix-canvas"></canvas>
 
-    <div id="daysBox" style="display:none;">
-        <input id="daysInput" type="number" placeholder="Nhập số ngày sử dụng">
+<div class="main-box">
+    <div class="tabs" id="authTabs">
+        <div class="tab active" onclick="switchTab('login')">LOGIN</div>
+        <div class="tab" onclick="switchTab('reg')">REGISTER</div>
     </div>
 
-    <button onclick="createKey()">PHÁT HÀNH KEY</button>
-</div>
+    <div class="content">
+        <div id="form-login" class="form-group active">
+            <h2>USER_AUTH</h2>
+            <input type="text" id="lUser" placeholder="Tên tài khoản">
+            <input type="password" id="lPass" placeholder="Mật khẩu">
+            <button class="btn" onclick="handleLogin()">[ Đăng nhập ]</button>
+        </div>
 
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>Mã Key</th>
-                <th>Loại Key</th>
-                <th>Trạng thái</th>
-                <th>Chủ tài khoản</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-    </table>
+        <div id="form-reg" class="form-group">
+            <h2 style="color: var(--blue)">CREATE_ACCOUNT</h2>
+            <input type="text" id="rUser" placeholder="Tên tài khoản mới">
+            <input type="password" id="rPass" placeholder="Mật khẩu">
+            <button class="btn" style="border-color: var(--blue); color: var(--blue)" onclick="handleRegister()">[ Khởi tạo ]</button>
+        </div>
+
+        <div id="form-key" class="form-group">
+            <h2>LICENSE_KEY</h2>
+            <p id="userDisplay" style="text-align:center; font-size:11px; color:#666; margin-bottom:15px;"></p>
+            <input type="text" id="keyInput" placeholder="Nhập Key kích hoạt">
+            <button class="btn" onclick="handleVerifyKey()">[ Kích hoạt VIP ]</button>
+            <p onclick="logout()" style="text-align:center; font-size:10px; color:#444; margin-top:20px; cursor:pointer;">THOÁT TÀI KHOẢN</p>
+        </div>
+
+        <div id="statusMsg" class="status">Hệ thống sẵn sàng...</div>
+    </div>
 </div>
 
 <script>
-    // Giữ nguyên cấu hình Firebase của bạn
+    // --- CẤU HÌNH FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
         authDomain: "keyquocdat.firebaseapp.com",
@@ -85,67 +91,139 @@
         appId: "1:940819957535:web:6e8e9a4c9838740da3122a"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref("keys");
+    const db = firebase.database();
 
-    function toggleDays() {
-        const type = document.getElementById("keyType").value;
-        document.getElementById("daysBox").style.display = type.includes("TIME") ? "block" : "none";
-    }
-
-    async function createKey() {
-        const key = document.getElementById("keyInput").value.trim().toUpperCase();
-        const type = document.getElementById("keyType").value;
-        const days = parseInt(document.getElementById("daysInput").value);
-
-        if(!key) return alert("Vui lòng nhập mã Key!");
-
-        let data = {
-            type: type,
-            createdAt: firebase.database.ServerValue.TIMESTAMP,
-            owner: "" // Để trống, ai nhập Key này đầu tiên sẽ được gán tên vào đây
-        };
-
-        if(type.includes("ONCE")) data.used = false;
-        if(type.includes("TIME")) {
-            if(!days) return alert("Vui lòng nhập số ngày!");
-            data.durationDays = days; // Lưu số ngày để tính toán khi người dùng nhập key
-        }
-
-        await db.child(key).set(data);
-        document.getElementById("keyInput").value = "";
-        console.log("Đã tạo key thành công");
-    }
-
-    db.on('value', snap => {
-        const tbody = document.getElementById("tbody");
-        tbody.innerHTML = "";
-        const data = snap.val();
-        if(!data) return;
-
-        for(let id in data) {
-            const item = data[id];
-            const isExpired = item.expiresAt && Date.now() > item.expiresAt;
-            
-            let statusHtml = item.used ? '<span class="status-pill used">Đã dùng</span>' : '<span class="status-pill available">Sẵn sàng</span>';
-            if(isExpired) statusHtml = '<span class="status-pill used" style="color:red">Hết hạn</span>';
-
-            let tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td style="font-weight:bold; color:var(--neon)">${id}</td>
-                <td><small>${item.type}</small></td>
-                <td>${statusHtml}</td>
-                <td class="owner-text">${item.owner || '<span style="color:#444">Chưa có</span>'}</td>
-                <td><button class="btn-del" onclick="deleteKey('${id}')">Xóa</button></td>
-            `;
-            tbody.appendChild(tr);
-        }
-    });
-
-    async function deleteKey(id) {
-        if(confirm("Bạn có chắc chắn muốn xóa key này?")) {
-            await db.child(id).remove();
+    // --- HIỆU ỨNG MATRIX ---
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const chars = "0123456789ABCDEF"; const fontSize = 16;
+    const columns = canvas.width / fontSize; const drops = Array(Math.floor(columns)).fill(1);
+    function draw() {
+        ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "#0f0"; ctx.font = fontSize + "px monospace";
+        for(let i=0; i<drops.length; i++) {
+            ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fontSize, drops[i]*fontSize);
+            if(drops[i]*fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
         }
     }
+    setInterval(draw, 35);
+
+    // --- LOGIC GIAO DIỆN ---
+    const msg = document.getElementById('statusMsg');
+
+    function switchTab(type) {
+        document.querySelectorAll('.tab, .form-group').forEach(el => el.classList.remove('active'));
+        if(type === 'login') {
+            document.querySelector('.tab:nth-child(1)').classList.add('active');
+            document.getElementById('form-login').classList.add('active');
+        } else {
+            document.querySelector('.tab:nth-child(2)').classList.add('active');
+            document.getElementById('form-reg').classList.add('active');
+        }
+    }
+
+    function showKeyForm(username) {
+        document.getElementById('authTabs').style.display = 'none';
+        document.querySelectorAll('.form-group').forEach(el => el.classList.remove('active'));
+        document.getElementById('form-key').classList.add('active');
+        document.getElementById('userDisplay').innerText = "Tài khoản: " + username;
+    }
+
+    // --- XỬ LÝ FIREBASE ---
+
+    function handleRegister() {
+        const u = document.getElementById('rUser').value.trim();
+        const p = document.getElementById('rPass').value.trim();
+        if(!u || !p) return alert("Vui lòng điền đủ thông tin!");
+
+        msg.innerText = "Đang kiểm tra dữ liệu...";
+        db.ref('users/' + u).once('value').then(snap => {
+            if(snap.exists()) {
+                msg.innerText = "Lỗi: Tài khoản đã tồn tại!";
+                msg.className = "status error";
+            } else {
+                db.ref('users/' + u).set({ password: p, createdAt: new Date().toLocaleString() })
+                .then(() => {
+                    alert("Đăng ký thành công! Hãy đăng nhập.");
+                    switchTab('login');
+                });
+            }
+        });
+    }
+
+    function handleLogin() {
+        const u = document.getElementById('lUser').value.trim();
+        const p = document.getElementById('lPass').value.trim();
+        if(!u || !p) return;
+
+        msg.innerText = "Đang xác thực...";
+        db.ref('users/' + u).once('value').then(snap => {
+            if(snap.exists() && snap.val().password === p) {
+                localStorage.setItem('user_session', u);
+                showKeyForm(u);
+                msg.innerText = "Đăng nhập thành công!";
+                msg.className = "status success";
+            } else {
+                msg.innerText = "Lỗi: Sai tài khoản hoặc mật khẩu!";
+                msg.className = "status error";
+            }
+        });
+    }
+
+    function handleVerifyKey() {
+        const key = document.getElementById('keyInput').value.trim().toUpperCase();
+        const currentUser = localStorage.getItem('user_session');
+        if(!key) return alert("Nhập mã Key!");
+
+        msg.innerText = "Đang kiểm tra Key...";
+        db.ref('keys/' + key).transaction((data) => {
+            if (!data) return null; // Key không tồn tại
+
+            // LOGIC KHÓA TÀI KHOẢN (LOCKED)
+            if (data.type && data.type.includes("LOCKED")) {
+                if (!data.owner || data.owner === "") {
+                    data.owner = currentUser; // Gán chủ sở hữu nếu key mới
+                } else if (data.owner !== currentUser) {
+                    return undefined; // Sai chủ sở hữu -> Trả về lỗi
+                }
+            }
+
+            // Kiểm tra thời gian
+            if (data.type.includes("TIME") && !data.expiresAt) {
+                data.expiresAt = Date.now() + (data.durationDays * 86400000);
+            }
+
+            if (data.used && data.type.includes("ONCE")) return undefined;
+            if (data.expiresAt && Date.now() > data.expiresAt) return undefined;
+
+            // Đánh dấu đã dùng
+            if (data.type.includes("ONCE")) data.used = true;
+
+            return data;
+        }, (err, committed, snap) => {
+            if (err || !snap.exists() || !committed) {
+                msg.innerText = "Key không hợp lệ hoặc bị khóa cho tài khoản khác!";
+                msg.className = "status error";
+            } else {
+                msg.innerText = "KÍCH HOẠT THÀNH CÔNG!";
+                msg.className = "status success";
+                localStorage.setItem('vip_status', 'active');
+                setTimeout(() => { window.location.href = "index.html"; }, 1500);
+            }
+        });
+    }
+
+    function logout() {
+        localStorage.clear();
+        location.reload();
+    }
+
+    // Kiểm tra phiên đăng nhập khi load trang
+    window.onload = () => {
+        const session = localStorage.getItem('user_session');
+        if(session) showKeyForm(session);
+    };
 </script>
 </body>
 </html>
