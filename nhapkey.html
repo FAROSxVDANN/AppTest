@@ -2,234 +2,134 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hacker System - Access Portal</title>
-
+    <title>Security Portal</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background: #000; overflow: hidden;
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; font-family: 'Courier New', Courier, monospace;
-        }
-
-        #matrix-canvas { position: fixed; top: 0; left: 0; z-index: 1; }
-
-        .hacker-box {
-            position: relative; z-index: 2;
-            width: 90%; max-width: 400px; padding: 35px 30px;
-            background: rgba(0, 0, 0, 0.9); border: 2px solid #0f0;
-            box-shadow: 0 0 25px rgba(0, 255, 0, 0.2); text-align: center;
-        }
-
-        h3 { color: #0f0; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 25px; text-shadow: 0 0 10px #0f0; }
-
-        input[type="text"] {
-            width: 100%; padding: 15px; margin-bottom: 15px;
-            background: transparent; border: 1px solid #0f0;
-            color: #0f0; font-size: 18px; text-align: center; outline: none;
-        }
-
-        /* Style cho cụm Checkbox */
-        .remember-me {
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 20px; color: #0f0; font-size: 13px; cursor: pointer;
-        }
-
-        .remember-me input {
-            margin-right: 8px; cursor: pointer; accent-color: #0f0;
-        }
-
-        button {
-            width: 100%; padding: 15px; border: 1px solid #0f0;
-            background: transparent; color: #0f0; font-size: 16px;
-            font-weight: bold; cursor: pointer; text-transform: uppercase;
-        }
-
-        button:hover { background: #0f0; color: #000; box-shadow: 0 0 20px #0f0; }
-        button:disabled { opacity: 0.3; }
-
-        .progress-container { margin-top: 20px; height: 10px; border: 1px solid #0f0; display: none; }
-        .progress-bar { height: 100%; width: 0%; background: #0f0; box-shadow: 0 0 10px #0f0; }
-
-        #msg { margin-top: 20px; font-size: 13px; color: #0f0; text-transform: uppercase; min-height: 20px; }
-        .success { color: #00ffcc !important; text-shadow: 0 0 10px #00ffcc; }
-        .error { color: #f00 !important; border-color: #f00 !important; text-shadow: 0 0 10px #f00; }
-
-        .shake { animation: shake 0.4s both; }
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-1px, 0, 0); }
-            20%, 80% { transform: translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-            40%, 60% { transform: translate3d(4px, 0, 0); }
-        }
-        .blink { animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
+        * { box-sizing: border-box; }
+        body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: sans-serif; }
+        #matrix { position: fixed; top:0; left:0; z-index:1; opacity:0.3; }
+        .box { position: relative; z-index: 2; width: 350px; background: rgba(10,10,10,0.95); border: 1px solid #0f0; border-radius: 15px; padding: 30px; box-shadow: 0 0 20px #0f03; }
+        h2 { color: #0f0; text-align: center; font-size: 18px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin-bottom: 12px; background: #111; border: 1px solid #333; color: #0f0; outline: none; border-radius: 5px; }
+        .btn { width: 100%; padding: 12px; background: transparent; border: 1px solid #0f0; color: #0f0; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        .btn:hover { background: #0f0; color: #000; }
+        .tabs { display: flex; border-bottom: 1px solid #222; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 10px; text-align: center; color: #444; cursor: pointer; font-size: 12px; }
+        .tab.active { color: #0f0; border-bottom: 2px solid #0f0; }
+        #keyArea { display: none; text-align: center; }
     </style>
 </head>
 <body>
 
-<canvas id="matrix-canvas"></canvas>
+<canvas id="matrix"></canvas>
 
-<div class="hacker-box" id="mainBox">
-    <h3>> SYSTEM_ACCESS</h3>
-    
-    <input id="keyInput" type="text" placeholder="ENTER ACCESS KEY..." autocomplete="off">
-    
-    <label class="remember-me">
-        <input type="checkbox" id="autoLoginTick"> REMEMBER DEVICE & AUTO-LOGIN
-    </label>
-
-    <button id="btnVerify" onclick="startVerify()">[ EXECUTE ]</button>
-
-    <div class="progress-container" id="progress">
-        <div class="progress-bar" id="bar"></div>
+<div class="box">
+    <div id="authHeader">
+        <div class="tabs">
+            <div class="tab active" id="tL" onclick="tab('login')">LOGIN</div>
+            <div class="tab" id="tR" onclick="tab('reg')">REGISTER</div>
+        </div>
+        <div id="loginForm">
+            <input id="lU" placeholder="USERNAME">
+            <input id="lP" type="password" placeholder="PASSWORD">
+            <button class="btn" onclick="login()">[ EXECUTE ]</button>
+        </div>
+        <div id="regForm" style="display:none;">
+            <input id="rU" placeholder="NEW USER">
+            <input id="rP" type="password" placeholder="PASS">
+            <button class="btn" onclick="register()">[ INITIALIZE ]</button>
+        </div>
     </div>
 
-    <div id="msg" class="blink">AWAITING INPUT...</div>
+    <div id="keyArea">
+        <h2>LICENSE_REQUIRED</h2>
+        <input id="keyIn" placeholder="ENTER ACCESS KEY">
+        <button class="btn" onclick="verifyKey()">[ VERIFY ]</button>
+    </div>
 </div>
 
 <script>
-// 1. CONFIG FIREBASE
-const firebaseConfig = {
-    apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
-    databaseURL: "https://keyquocdat-default-rtdb.asia-southeast1.firebasedatabase.app"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.database().ref("keys");
+    const firebaseConfig = {
+        apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
+        authDomain: "keyquocdat.firebaseapp.com",
+        databaseURL: "https://keyquocdat-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "keyquocdat",
+        storageBucket: "keyquocdat.firebasestorage.app",
+        messagingSenderId: "940819957535",
+        appId: "1:940819957535:web:6e8e9a4c9838740da3122a"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-// 2. MATRIX EFFECT (Rút gọn)
-const canvas = document.getElementById('matrix-canvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
-const fontSize = 16;
-const columns = canvas.width / fontSize;
-const drops = Array(Math.floor(columns)).fill(1);
-let matrixColor = "#0f0";
-let matrixInterval = setInterval(() => {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = matrixColor;
-    ctx.font = fontSize + "px Courier New";
-    for (let i = 0; i < drops.length; i++) {
-        const text = characters.charAt(Math.floor(Math.random() * characters.length));
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
-    }
-}, 35);
+    // Matrix Background
+    const c = document.getElementById('matrix'); const ctx = c.getContext('2d');
+    c.width = window.innerWidth; c.height = window.innerHeight;
+    const drops = Array(Math.floor(c.width/16)).fill(1);
+    setInterval(() => {
+        ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
+        ctx.fillStyle = "#0f0"; drops.forEach((y, i) => {
+            ctx.fillText(String.fromCharCode(Math.random()*128), i*16, y*16);
+            if(y*16 > c.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
+        });
+    }, 35);
 
-// 3. DEVICE ID & AUTO-FILL
-function getDeviceId() {
-    let id = localStorage.getItem("deviceId");
-    if (!id) {
-        id = "ID-" + Math.random().toString(36).substr(2, 9).toUpperCase();
-        localStorage.setItem("deviceId", id);
-    }
-    return id;
-}
-
-window.onload = () => {
-    // Nếu trước đó người dùng có tick "Remember", tự động điền và login
-    const savedKey = localStorage.getItem("lastUsedKey");
-    const autoLoginEnabled = localStorage.getItem("autoLoginEnabled");
-    
-    if (savedKey && autoLoginEnabled === "true") {
-        document.getElementById("keyInput").value = savedKey;
-        document.getElementById("autoLoginTick").checked = true;
-        // Tự động chạy verify sau 1s để người dùng kịp nhìn
-        setTimeout(startVerify, 1000);
-    }
-};
-
-// 4. LOGIC XÁC THỰC
-function startVerify() {
-    const box = document.getElementById('mainBox');
-    const keyInput = document.getElementById("keyInput");
-    const key = keyInput.value.trim().toUpperCase().replace(/\s+/g, "");
-    const msg = document.getElementById("msg");
-    const bar = document.getElementById("bar");
-    const progress = document.getElementById("progress");
-    const btn = document.getElementById("btnVerify");
-    const isRemember = document.getElementById("autoLoginTick").checked;
-
-    box.classList.remove('shake');
-    if (!key) {
-        msg.textContent = "> ERROR: KEY REQUIRED!";
-        msg.className = "error";
-        void box.offsetWidth; box.classList.add('shake');
-        return;
+    function getID() {
+        let id = localStorage.getItem("did");
+        if(!id) { id = "ID-"+Math.random().toString(36).substr(2,7).toUpperCase(); localStorage.setItem("did", id); }
+        return id;
     }
 
-    btn.disabled = true; keyInput.disabled = true;
-    bar.style.width = "0%"; progress.style.display = "block";
-    msg.textContent = "> DECRYPTING..."; msg.className = "blink";
+    function tab(type) {
+        document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
+        document.getElementById('regForm').style.display = type === 'reg' ? 'block' : 'none';
+        document.getElementById('tL').className = type === 'login' ? 'tab active' : 'tab';
+        document.getElementById('tR').className = type === 'reg' ? 'tab active' : 'tab';
+    }
 
-    let percent = 0;
-    const loadInt = setInterval(() => {
-        percent += 10; bar.style.width = percent + "%";
-        if (percent >= 100) {
-            clearInterval(loadInt);
-            executeVerify(key, msg, btn, box, isRemember);
-        }
-    }, 40);
-}
+    function register() {
+        const u = document.getElementById('rU').value.trim();
+        const p = document.getElementById('rP').value.trim();
+        if(!u || !p) return;
+        db.ref('users/'+u).once('value', s => {
+            if(s.exists()) alert("Đã tồn tại!");
+            else db.ref('users/'+u).set({p: p, d: getID()}).then(() => { alert("OK!"); tab('login'); });
+        });
+    }
 
-function executeVerify(key, msg, btn, box, isRemember) {
-    const deviceId = getDeviceId();
-    
-    db.child(key).transaction((data) => {
-        if (!data) return null;
+    function login() {
+        const u = document.getElementById('lU').value.trim();
+        const p = document.getElementById('lP').value.trim();
+        db.ref('users/'+u).once('value', s => {
+            if(s.exists() && s.val().p === p) {
+                localStorage.setItem("session", u);
+                document.getElementById('authHeader').style.display = 'none';
+                document.getElementById('keyArea').style.display = 'block';
+            } else alert("Sai!");
+        });
+    }
 
-        // KIỂM TRA DEVICE (Nếu là key LOCKED)
-        if (data.type && data.type.startsWith("LOCKED")) {
-            if (!data.device) data.device = deviceId;
-            else if (data.device !== deviceId) return undefined;
-        }
-
-        // KIỂM TRA HẠN/LƯỢT DÙNG
-        if (data.type.includes("ONCE")) {
-            if (data.used && data.device !== deviceId) return undefined;
-            data.used = true;
-        } else if (data.type.includes("TIME")) {
-            if (Date.now() > data.expiresAt) return undefined;
-        }
-
-        return data;
-    }, (error, committed, snapshot) => {
-        if (error || !snapshot.exists() || !committed) {
-            msg.textContent = !snapshot.exists() ? "> KEY NOT FOUND!" : "> ACCESS DENIED!";
-            msg.className = "error";
-            box.classList.add('shake');
-            btn.disabled = false; document.getElementById("keyInput").disabled = false;
-            // Xóa auto login nếu bị lỗi key
-            localStorage.removeItem("autoLoginEnabled");
-        } else {
-            msg.textContent = "> ACCESS GRANTED!";
-            msg.className = "success";
-            matrixColor = "#00ffcc";
-            
-            // Xử lý lưu hay không lưu theo Checkbox
-            if (isRemember) {
-                localStorage.setItem("autoLoginEnabled", "true");
-                localStorage.setItem("lastUsedKey", key);
-            } else {
-                localStorage.removeItem("autoLoginEnabled");
-                localStorage.removeItem("lastUsedKey");
+    function verifyKey() {
+        const k = document.getElementById('keyIn').value.trim().toUpperCase();
+        const did = getID();
+        db.ref('keys/'+k).transaction(data => {
+            if(!data) return null;
+            if(data.type.includes("LOCKED")) {
+                if(!data.device) data.device = did;
+                else if(data.device !== did) return undefined;
             }
-            
-            localStorage.setItem("userVerified", "true");
-            setTimeout(() => { window.location.href = "index.html"; }, 1500);
-        }
-    });
-}
+            if(data.used && data.type.includes("ONCE")) return undefined;
+            if(data.expiresAt && Date.now() > data.expiresAt) return undefined;
+            if(data.type.includes("ONCE")) data.used = true;
+            return data;
+        }, (err, ok, snap) => {
+            if(ok && snap.exists()) { alert("ACCESS GRANTED!"); window.location.href="index.html"; }
+            else alert("KEY LỖI/HẾT HẠN/SAI MÁY!");
+        });
+    }
 
-document.getElementById("keyInput").addEventListener("keypress", e => { if (e.key === "Enter") startVerify(); });
-window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    window.onload = () => { if(localStorage.getItem("session")) { document.getElementById('authHeader').style.display='none'; document.getElementById('keyArea').style.display='block'; } };
 </script>
 </body>
-</html>
+                                                                 </html>
+    
