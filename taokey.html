@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0; min-height: 100vh;
+    background: linear-gradient(135deg, #121212, #000000);
+    display: flex; justify-content: center; align-items: center;
+    font-family: sans-serif;
+}
+.box {
+    width: 320px; padding: 25px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px);
+    color: #fff;
+}
+input, select, button {
+    width: 100%; padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    border: none;
+}
+button { background: #0a84ff; color: #fff; cursor: pointer; }
+#msg { margin-top: 10px; }
+.success { color: #32d74b; }
+.error { color: #ff453a; }
+</style>
+</head>
+
+<body>
+<div class="box">
+    <h3>Tạo Key</h3>
+
+    <input id="keyInput" placeholder="Nhập key">
+
+    <select id="keyType" onchange="toggleDaysInput()">
+        <option value="ONCE">1 Lần</option>
+        <option value="TIME">Theo Ngày</option>
+        <option value="INFINITE">Vĩnh Viễn</option>
+
+        <option value="LOCKED_ONCE">1 Lần - 1 Thiết Bị</option>
+        <option value="LOCKED_TIME">Theo Ngày - 1 Thiết Bị</option>
+        <option value="LOCKED_INFINITE">Vĩnh Viễn - 1 Thiết Bị</option>
+    </select>
+
+    <input id="daysInput" type="number" placeholder="Số ngày" style="display:none">
+
+    <button onclick="createKey()">Tạo Key</button>
+    <div id="msg"></div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
+    databaseURL: "https://keyquocdat-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database().ref("keys");
+
+function toggleDaysInput() {
+    const type = document.getElementById("keyType").value;
+    document.getElementById("daysInput").style.display =
+        (type.includes("TIME")) ? "block" : "none";
+}
+
+function normalizeKey(k) {
+    return k.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+async function createKey() {
+    const key = normalizeKey(document.getElementById("keyInput").value);
+    const type = document.getElementById("keyType").value;
+    const days = parseInt(document.getElementById("daysInput").value);
+    const msg = document.getElementById("msg");
+
+    if (!key) {
+        msg.textContent = "Nhập key!";
+        msg.className = "error"; return;
+    }
+
+    let data = {
+        type: type,
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        device: null
+    };
+
+    if (type.includes("ONCE")) data.used = false;
+
+    if (type.includes("TIME")) {
+        if (!days || days <= 0) {
+            msg.textContent = "Số ngày không hợp lệ!";
+            msg.className = "error"; return;
+        }
+        data.expiresAt = Date.now() + days * 86400000;
+    }
+
+    await db.child(key).set(data);
+
+    msg.textContent = "Đã tạo: " + key;
+    msg.className = "success";
+}
+</script>
+</body>
+</html>
