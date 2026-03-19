@@ -3,84 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUOCDAT SEC | Hệ Thống Xác Thực</title>
-    
+    <title>ADMIN DASHBOARD</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --neon: #0f0; --blue: #00b8ff; --bg: #000; }
-        * { box-sizing: border-box; margin: 0; padding: 0; transition: 0.3s; }
-        body { background: var(--bg); color: #fff; font-family: 'Roboto', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        :root { --neon: #00ff41; --bg: #050505; --card: #0a0a0a; --red: #ff3e3e; }
+        * { box-sizing: border-box; font-family: 'Share Tech Mono', monospace; }
+        body { background: var(--bg); color: var(--neon); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
-        #matrix-canvas { position: fixed; top: 0; left: 0; z-index: 1; opacity: 0.3; }
+        h1 { font-family: 'Orbitron'; font-size: 20px; letter-spacing: 3px; text-shadow: 0 0 10px var(--neon); margin-bottom: 30px; }
 
-        .main-box { position: relative; z-index: 2; width: 95%; max-width: 400px; background: rgba(10, 10, 10, 0.95); border: 1px solid #333; border-radius: 20px; overflow: hidden; box-shadow: 0 0 30px rgba(0, 255, 0, 0.1); }
-        .main-box:hover { border-color: var(--neon); box-shadow: 0 0 40px rgba(0, 255, 0, 0.2); }
+        /* Stats Row */
+        .stats-container { display: flex; gap: 15px; width: 100%; max-width: 900px; margin-bottom: 25px; flex-wrap: wrap; }
+        .stat-card { flex: 1; min-width: 150px; background: var(--card); border: 1px solid #111; padding: 15px; text-align: center; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .stat-card span { display: block; font-size: 10px; color: #555; margin-bottom: 5px; }
+        .stat-card b { font-family: 'Orbitron'; font-size: 18px; color: #fff; }
 
-        .tabs { display: flex; background: #050505; border-bottom: 1px solid #222; }
-        .tab { flex: 1; padding: 15px; text-align: center; font-family: 'Orbitron'; font-size: 12px; cursor: pointer; color: #555; border-bottom: 2px solid transparent; }
-        .tab.active { color: var(--neon); border-bottom-color: var(--neon); text-shadow: 0 0 10px var(--neon); }
-
-        .content { padding: 30px; }
-        .form-group { display: none; animation: fadeIn 0.5s ease; }
-        .form-group.active { display: block; }
-
-        h2 { font-family: 'Orbitron'; text-align: center; font-size: 18px; margin-bottom: 20px; letter-spacing: 2px; color: var(--neon); }
+        /* Control Card */
+        .card { background: var(--card); padding: 25px; border: 1px solid var(--neon); width: 100%; max-width: 900px; position: relative; box-shadow: 0 0 20px rgba(0,255,65,0.1); margin-bottom: 30px; }
+        .grid-inputs { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end; }
         
-        input { width: 100%; padding: 14px; background: #111; border: 1px solid #333; border-radius: 10px; color: #fff; margin-bottom: 15px; outline: none; font-family: monospace; }
-        input:focus { border-color: var(--neon); background: #151515; }
+        input, select { background: #000; border: 1px solid #222; color: var(--neon); padding: 12px; outline: none; width: 100%; }
+        input:focus { border-color: var(--neon); }
+        
+        label { display: block; font-size: 10px; color: #888; margin-bottom: 5px; }
+        
+        button { background: transparent; border: 1px solid var(--neon); color: var(--neon); padding: 12px 20px; cursor: pointer; font-family: 'Orbitron'; font-weight: bold; transition: 0.3s; }
+        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+        .btn-clean { border-color: #ffb800; color: #ffb800; font-size: 10px; padding: 5px 15px; margin-bottom: 15px; }
 
-        .btn { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--neon); color: var(--neon); font-family: 'Orbitron'; font-weight: bold; border-radius: 10px; cursor: pointer; text-transform: uppercase; }
-        .btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 20px var(--neon); }
+        /* Table Style */
+        .table-wrapper { width: 100%; max-width: 900px; overflow-x: auto; background: var(--card); border: 1px solid #111; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #000; color: #555; font-size: 11px; padding: 15px; text-align: left; text-transform: uppercase; border-bottom: 1px solid #111; }
+        td { padding: 15px; font-size: 13px; border-bottom: 1px solid #0a0a0a; color: #ccc; }
+        tr:hover { background: rgba(0,255,65,0.02); }
 
-        .status { text-align: center; margin-top: 15px; font-size: 12px; min-height: 18px; color: #888; }
-        .success { color: #0f0 !important; }
-        .error { color: #ff453a !important; }
+        /* Badges */
+        .badge { padding: 2px 8px; border-radius: 2px; font-size: 10px; font-weight: bold; }
+        .bg-green { background: rgba(0, 255, 65, 0.15); color: var(--neon); }
+        .bg-red { background: rgba(255, 62, 62, 0.15); color: var(--red); }
+        .bg-orange { background: rgba(255, 184, 0, 0.15); color: #ffb800; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-del { color: var(--red); border: none; background: none; cursor: pointer; font-size: 11px; text-decoration: underline; }
+
+        /* Modal Custom */
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; }
+        #h-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 101; width: 300px; background: #000; border: 1px solid var(--neon); padding: 20px; text-align: center; }
+        .scan { position: absolute; top: 0; left: 0; width: 100%; height: 1px; background: var(--neon); animation: s 2s linear infinite; }
+        @keyframes s { 0% {top:0} 100%{top:100%} }
     </style>
 </head>
 <body>
 
-<canvas id="matrix-canvas"></canvas>
+<h1>ADMIN_CONTROL_PANEL</h1>
 
-<div class="main-box">
-    <div class="tabs" id="authTabs">
-        <div class="tab active" onclick="switchTab('login')">LOGIN</div>
-        <div class="tab" onclick="switchTab('reg')">REGISTER</div>
-    </div>
+<div class="stats-container">
+    <div class="stat-card"><span>TỔNG KEY</span><b id="stat-total">0</b></div>
+    <div class="stat-card"><span>KEY ĐÃ DÙNG</span><b id="stat-used">0</b></div>
+    <div class="stat-card"><span>HẾT HẠN</span><b id="stat-expired">0</b></div>
+</div>
 
-    <div class="content">
-        <div id="form-login" class="form-group active">
-            <h2>USER_AUTH</h2>
-            <input type="text" id="lUser" placeholder="Tên tài khoản">
-            <input type="password" id="lPass" placeholder="Mật khẩu">
-            <button class="btn" onclick="handleLogin()">[ Đăng nhập ]</button>
+<div class="card">
+    <div class="grid-inputs">
+        <div>
+            <label>Tên Key / Mã định danh</label>
+            <input id="keyIn" placeholder="VÍ DỤ: VIP-666">
         </div>
-
-        <div id="form-reg" class="form-group">
-            <h2 style="color: var(--blue)">CREATE_ACCOUNT</h2>
-            <input type="text" id="rUser" placeholder="Tên tài khoản mới">
-            <input type="password" id="rPass" placeholder="Mật khẩu">
-            <button class="btn" style="border-color: var(--blue); color: var(--blue)" onclick="handleRegister()">[ Khởi tạo ]</button>
+        <div>
+            <label>Loại Key</label>
+            <select id="typeIn" onchange="toggleDays()">
+                <option value="ONCE">DÙNG 1 LẦN</option>
+                <option value="TIME">THEO NGÀY</option>
+                <option value="INFINITE">VĨNH VIỄN</option>
+                <option value="LOCKED_ONCE">1 LẦN - 1 MÁY</option>
+                <option value="LOCKED_TIME">NGÀY - 1 MÁY</option>
+            </select>
         </div>
-
-        <div id="form-key" class="form-group">
-            <h2>LICENSE_KEY</h2>
-            <p id="userDisplay" style="text-align:center; font-size:11px; color:#666; margin-bottom:15px;"></p>
-            <input type="text" id="keyInput" placeholder="Nhập Key kích hoạt">
-            <button class="btn" onclick="handleVerifyKey()">[ Kích hoạt VIP ]</button>
-            <p onclick="logout()" style="text-align:center; font-size:10px; color:#444; margin-top:20px; cursor:pointer;">THOÁT TÀI KHOẢN</p>
+        <div id="daysBox" style="display:none;">
+            <label>Số ngày</label>
+            <input id="daysIn" type="number" value="1">
         </div>
-
-        <div id="statusMsg" class="status">Hệ thống sẵn sàng...</div>
+        <button onclick="addKey()">[ PHÁT HÀNH ]</button>
     </div>
 </div>
 
+<div style="width: 100%; max-width: 900px; text-align: right;">
+    <button class="btn-clean" onclick="cleanKeys()">[ DỌN DẸP KEY LỖI/HẾT HẠN ]</button>
+</div>
+
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Mã Key</th>
+                <th>Phân Loại</th>
+                <th>Người Dùng (ID)</th>
+                <th>Trạng Thái</th>
+                <th>Hành Động</th>
+            </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+    </table>
+</div>
+
+<div id="modal-overlay"></div>
+<div id="h-modal">
+    <div class="scan"></div>
+    <p id="m-txt" style="font-size: 14px; margin: 20px 0;"></p>
+    <button onclick="closeM()" style="font-size: 10px; padding: 5px 15px;">[ ĐÓNG ]</button>
+</div>
+
 <script>
-    // --- CẤU HÌNH FIREBASE ---
     const firebaseConfig = {
         apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
         authDomain: "keyquocdat.firebaseapp.com",
@@ -91,139 +127,85 @@
         appId: "1:940819957535:web:6e8e9a4c9838740da3122a"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db = firebase.database().ref("keys");
 
-    // --- HIỆU ỨNG MATRIX ---
-    const canvas = document.getElementById('matrix-canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    const chars = "0123456789ABCDEF"; const fontSize = 16;
-    const columns = canvas.width / fontSize; const drops = Array(Math.floor(columns)).fill(1);
-    function draw() {
-        ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = "#0f0"; ctx.font = fontSize + "px monospace";
-        for(let i=0; i<drops.length; i++) {
-            ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fontSize, drops[i]*fontSize);
-            if(drops[i]*fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
+    function showM(t) {
+        document.getElementById('m-txt').innerText = "> " + t;
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('h-modal').style.display = 'block';
+    }
+    function closeM() {
+        document.getElementById('modal-overlay').style.display = 'none';
+        document.getElementById('h-modal').style.display = 'none';
+    }
+
+    function toggleDays() {
+        const val = document.getElementById('typeIn').value;
+        document.getElementById('daysBox').style.display = val.includes('TIME') ? 'block' : 'none';
+    }
+
+    async function addKey() {
+        const k = document.getElementById('keyIn').value.trim().toUpperCase();
+        const t = document.getElementById('typeIn').value;
+        const d = parseInt(document.getElementById('daysIn').value);
+        if(!k) return showM("CHƯA NHẬP TÊN KEY!");
+
+        let data = { type: t, createdAt: firebase.database.ServerValue.TIMESTAMP };
+        if(t.includes("ONCE")) data.used = false;
+        if(t.includes("TIME")) data.expiresAt = Date.now() + (d * 86400000);
+
+        await db.child(k).set(data);
+        document.getElementById('keyIn').value = "";
+        showM("ĐÃ PHÁT HÀNH KEY: " + k);
+    }
+
+    db.on('value', snap => {
+        const tbody = document.getElementById("tbody");
+        tbody.innerHTML = "";
+        const data = snap.val();
+        if(!data) return updateStats(0,0,0);
+
+        let count = 0, used = 0, exp = 0;
+        for(let id in data) {
+            count++;
+            const item = data[id];
+            let status = `<span class="badge bg-green">SẴN SÀNG</span>`;
+            
+            if(item.used === true) { status = `<span class="badge bg-red">ĐÃ DÙNG</span>`; used++; }
+            if(item.expiresAt && Date.now() > item.expiresAt) { status = `<span class="badge bg-orange">HẾT HẠN</span>`; exp++; }
+
+            let tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="color: var(--neon); font-weight: bold;">${id}</td>
+                <td><small>${item.type}</small></td>
+                <td>${item.owner || '-'}</td>
+                <td>${status}</td>
+                <td><button class="btn-del" onclick="db.child('${id}').remove()">[ XÓA ]</button></td>
+            `;
+            tbody.appendChild(tr);
         }
-    }
-    setInterval(draw, 35);
+        updateStats(count, used, exp);
+    });
 
-    // --- LOGIC GIAO DIỆN ---
-    const msg = document.getElementById('statusMsg');
-
-    function switchTab(type) {
-        document.querySelectorAll('.tab, .form-group').forEach(el => el.classList.remove('active'));
-        if(type === 'login') {
-            document.querySelector('.tab:nth-child(1)').classList.add('active');
-            document.getElementById('form-login').classList.add('active');
-        } else {
-            document.querySelector('.tab:nth-child(2)').classList.add('active');
-            document.getElementById('form-reg').classList.add('active');
-        }
+    function updateStats(c, u, e) {
+        document.getElementById('stat-total').innerText = c;
+        document.getElementById('stat-used').innerText = u;
+        document.getElementById('stat-expired').innerText = e;
     }
 
-    function showKeyForm(username) {
-        document.getElementById('authTabs').style.display = 'none';
-        document.querySelectorAll('.form-group').forEach(el => el.classList.remove('active'));
-        document.getElementById('form-key').classList.add('active');
-        document.getElementById('userDisplay').innerText = "Tài khoản: " + username;
-    }
-
-    // --- XỬ LÝ FIREBASE ---
-
-    function handleRegister() {
-        const u = document.getElementById('rUser').value.trim();
-        const p = document.getElementById('rPass').value.trim();
-        if(!u || !p) return alert("Vui lòng điền đủ thông tin!");
-
-        msg.innerText = "Đang kiểm tra dữ liệu...";
-        db.ref('users/' + u).once('value').then(snap => {
-            if(snap.exists()) {
-                msg.innerText = "Lỗi: Tài khoản đã tồn tại!";
-                msg.className = "status error";
-            } else {
-                db.ref('users/' + u).set({ password: p, createdAt: new Date().toLocaleString() })
-                .then(() => {
-                    alert("Đăng ký thành công! Hãy đăng nhập.");
-                    switchTab('login');
-                });
-            }
-        });
-    }
-
-    function handleLogin() {
-        const u = document.getElementById('lUser').value.trim();
-        const p = document.getElementById('lPass').value.trim();
-        if(!u || !p) return;
-
-        msg.innerText = "Đang xác thực...";
-        db.ref('users/' + u).once('value').then(snap => {
-            if(snap.exists() && snap.val().password === p) {
-                localStorage.setItem('user_session', u);
-                showKeyForm(u);
-                msg.innerText = "Đăng nhập thành công!";
-                msg.className = "status success";
-            } else {
-                msg.innerText = "Lỗi: Sai tài khoản hoặc mật khẩu!";
-                msg.className = "status error";
-            }
-        });
-    }
-
-    function handleVerifyKey() {
-        const key = document.getElementById('keyInput').value.trim().toUpperCase();
-        const currentUser = localStorage.getItem('user_session');
-        if(!key) return alert("Nhập mã Key!");
-
-        msg.innerText = "Đang kiểm tra Key...";
-        db.ref('keys/' + key).transaction((data) => {
-            if (!data) return null; // Key không tồn tại
-
-            // LOGIC KHÓA TÀI KHOẢN (LOCKED)
-            if (data.type && data.type.includes("LOCKED")) {
-                if (!data.owner || data.owner === "") {
-                    data.owner = currentUser; // Gán chủ sở hữu nếu key mới
-                } else if (data.owner !== currentUser) {
-                    return undefined; // Sai chủ sở hữu -> Trả về lỗi
+    function cleanKeys() {
+        if(!confirm("XÓA TẤT CẢ KEY HẾT HẠN/ĐÃ DÙNG?")) return;
+        db.once('value', s => {
+            const data = s.val();
+            for(let id in data) {
+                if(data[id].used === true || (data[id].expiresAt && Date.now() > data[id].expiresAt)) {
+                    db.child(id).remove();
                 }
             }
-
-            // Kiểm tra thời gian
-            if (data.type.includes("TIME") && !data.expiresAt) {
-                data.expiresAt = Date.now() + (data.durationDays * 86400000);
-            }
-
-            if (data.used && data.type.includes("ONCE")) return undefined;
-            if (data.expiresAt && Date.now() > data.expiresAt) return undefined;
-
-            // Đánh dấu đã dùng
-            if (data.type.includes("ONCE")) data.used = true;
-
-            return data;
-        }, (err, committed, snap) => {
-            if (err || !snap.exists() || !committed) {
-                msg.innerText = "Key không hợp lệ hoặc bị khóa cho tài khoản khác!";
-                msg.className = "status error";
-            } else {
-                msg.innerText = "KÍCH HOẠT THÀNH CÔNG!";
-                msg.className = "status success";
-                localStorage.setItem('vip_status', 'active');
-                setTimeout(() => { window.location.href = "index.html"; }, 1500);
-            }
+            showM("ĐÃ DỌN DẸP HỆ THỐNG!");
         });
     }
-
-    function logout() {
-        localStorage.clear();
-        location.reload();
-    }
-
-    // Kiểm tra phiên đăng nhập khi load trang
-    window.onload = () => {
-        const session = localStorage.getItem('user_session');
-        if(session) showKeyForm(session);
-    };
 </script>
 </body>
-</html>
+    </html>
+    
