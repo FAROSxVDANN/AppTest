@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HỆ THỐNG XÁC THỰC</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
+    <title>VDANN SEC - HỆ THỐNG XÁC THỰC</title>
+    
     <style>
         :root { --hacker-green: #00ff41; --dark-bg: #000800; --error-red: #ff0000; }
         * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace; }
@@ -18,33 +16,16 @@
         .terminal-box { width: 95%; max-width: 420px; padding: 30px; background: rgba(0, 10, 0, 0.9); border: 1px solid var(--hacker-green); box-shadow: 0 0 20px rgba(0, 255, 65, 0.2); position: relative; z-index: 1; }
         .terminal-box::before { content: " "; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 4px, 3px 100%; pointer-events: none; }
 
-        .tabs { display: flex; border-bottom: 1px solid #113311; margin-bottom: 25px; }
-        .tab { flex: 1; padding: 10px; text-align: center; color: #004400; cursor: pointer; font-size: 12px; font-weight: bold; border-bottom: 2px solid transparent; transition: 0.3s; }
-        .tab.active { color: var(--hacker-green); border-bottom-color: var(--hacker-green); text-shadow: 0 0 5px var(--hacker-green); }
-
         h3 { color: var(--hacker-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; font-size: 16px; text-align: center; }
 
-        .form-section { display: none; }
-        .form-section.active { display: block; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        input { width: 100%; padding: 12px; background: rgba(0, 20, 0, 0.5); border: 1px solid #004400; color: var(--hacker-green); font-size: 14px; outline: none; margin-bottom: 15px; }
+        input { width: 100%; padding: 12px; background: rgba(0, 20, 0, 0.5); border: 1px solid #004400; color: var(--hacker-green); font-size: 14px; outline: none; margin-bottom: 15px; text-align: center; }
         input:focus { border-color: var(--hacker-green); box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
-
-        .options { display: flex; justify-content: space-between; font-size: 11px; color: #008800; margin-bottom: 15px; }
-        .chk-container { cursor: pointer; display: flex; align-items: center; }
-        .chk-container input { width: auto; margin: 0 5px 0 0; accent-color: var(--hacker-green); }
 
         button { width: 100%; padding: 14px; background: transparent; border: 1px solid var(--hacker-green); color: var(--hacker-green); font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
         button:hover { background: var(--hacker-green); color: #000; box-shadow: 0 0 15px var(--hacker-green); }
+        button:disabled { border-color: #333; color: #333; cursor: not-allowed; }
 
-        #msg { margin-top: 15px; font-size: 12px; color: var(--hacker-green); opacity: 0.8; }
-
-        /* Modal Thông báo Custom */
-        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; }
-        #hacker-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 101; width: 300px; background: #000; border: 2px solid var(--hacker-green); padding: 20px; text-align: center; box-shadow: 0 0 30px var(--hacker-green); }
-        .modal-scanner { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--hacker-green); animation: scan 2s linear infinite; }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        #msg { margin-top: 15px; font-size: 12px; color: var(--hacker-green); opacity: 0.8; text-align: center; }
 
         /* Progress Bar */
         .progress-container { margin-top: 15px; height: 4px; border: 1px solid #003300; display: none; }
@@ -55,138 +36,116 @@
 
 <canvas id="matrix-canvas"></canvas>
 
-<div id="modal-overlay"></div>
-<div id="hacker-modal">
-    <div class="modal-scanner"></div>
-    <div id="modal-text" style="color: var(--hacker-green); margin: 15px 0; font-size: 14px;"></div>
-    <button onclick="closeModal()" style="padding: 5px; font-size: 10px;">[ ĐÓNG ]</button>
-</div>
-
-<div class="terminal-box" id="mainBox">
-    <div id="authTabs" class="tabs">
-        <div class="tab active" id="tabL" onclick="switchTab('login')">ĐĂNG NHẬP</div>
-        <div class="tab" id="tabR" onclick="switchTab('reg')">ĐĂNG KÝ</div>
-    </div>
-
-    <div id="sec-login" class="form-section active">
-        <h3>> SYSTEM_LOGIN</h3>
-        <input id="lU" placeholder="TÊN TÀI KHOẢN..." autocomplete="off">
-        <input id="lP" type="password" placeholder="MẬT KHẨU...">
-        <div class="options">
-            <label class="chk-container"><input type="checkbox" id="rem"> TỰ ĐỘNG VÀO</label>
-            <span style="text-decoration: underline; cursor:pointer" onclick="showNotice('LIÊN HỆ ADMIN ĐỂ RESET')">QUÊN MẬT KHẨU?</span>
-        </div>
-        <button onclick="handleLogin()">[ THỰC THI ĐĂNG NHẬP ]</button>
-    </div>
-
-    <div id="sec-reg" class="form-section">
-        <h3>> INITIALIZE_ID</h3>
-        <input id="rU" placeholder="TÊN TÀI KHOẢN MỚI..." autocomplete="off">
-        <input id="rP" type="password" placeholder="MẬT KHẨU BẢO MẬT...">
-        <button onclick="handleRegister()">[ KHỞI TẠO TÀI KHOẢN ]</button>
-    </div>
-
-    <div id="sec-key" class="form-section">
-        <h3>> ACCESS_KEY_REQUIRED</h3>
-        <div id="userTag" style="color: #005500; font-size: 10px; margin-bottom: 10px; text-align: center;"></div>
-        <input id="kI" placeholder="NHẬP MÃ TRUY CẬP VIP..." autocomplete="off">
-        <button id="btnKey" onclick="handleVerify()">[ GIẢI MÃ & TRUY CẬP ]</button>
-        <div class="progress-container" id="pCont"><div class="progress-bar" id="pBar"></div></div>
-        <p onclick="logout()" style="color: #444; font-size: 9px; text-align: center; margin-top: 20px; cursor: pointer;">[ ĐĂNG XUẤT TÀI KHOẢN ]</p>
-    </div>
-
-    <div id="msg">root@system:~# awaiting_input...</div>
-</div>
-
-<script>
-    // --- FIREBASE CONFIG ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyAnZVbkcjZmVH8QC2mX6en3Rl68D2UnNTE",
-        databaseURL: "https://keyquocdat-default-rtdb.asia-southeast1.firebasedatabase.app"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // --- UI LOGIC ---
-    function showNotice(txt) {
-        document.getElementById('modal-text').innerText = "> " + txt;
-        document.getElementById('modal-overlay').style.display = 'block';
-        document.getElementById('hacker-modal').style.display = 'block';
-    }
-    function closeModal() {
-        document.getElementById('modal-overlay').style.display = 'none';
-        document.getElementById('hacker-modal').style.display = 'none';
-    }
-    function switchTab(t) {
-        document.querySelectorAll('.form-section, .tab').forEach(el => el.classList.remove('active'));
-        if(t==='login') { document.getElementById('sec-login').classList.add('active'); document.getElementById('tabL').classList.add('active'); }
-        else { document.getElementById('sec-reg').classList.add('active'); document.getElementById('tabR').classList.add('active'); }
-    }
-
-    // --- AUTH LOGIC ---
-    function handleRegister() {
-        const u = document.getElementById('rU').value.trim();
-        const p = document.getElementById('rP').value.trim();
-        if(!u || !p) return showNotice("VUI LÒNG NHẬP ĐỦ THÔNG TIN");
-        db.ref('users/'+u).once('value', s => {
-            if(s.exists()) showNotice("TÀI KHOẢN ĐÃ TỒN TẠI");
-            else db.ref('users/'+u).set({p: p}).then(() => { showNotice("KHỞI TẠO THÀNH CÔNG"); switchTab('login'); });
-        });
-    }
-
-    function handleLogin() {
-        const u = document.getElementById('lU').value.trim();
-        const p = document.getElementById('lP').value.trim();
-        db.ref('users/'+u).once('value', s => {
-            if(s.exists() && s.val().p === p) {
-                if(document.getElementById('rem').checked) localStorage.setItem("auto", "1");
-                localStorage.setItem("session", u);
-                enterKeySection(u);
-            } else showNotice("SAI THÔNG TIN ĐĂNG NHẬP");
-        });
-    }
-
-    function enterKeySection(u) {
-        document.getElementById('authTabs').style.display = 'none';
-        document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
-        document.getElementById('sec-key').classList.add('active');
-        document.getElementById('userTag').innerText = "SESSION: " + u.toUpperCase();
-    }
-
-    function handleVerify() {
-        const k = document.getElementById('kI').value.trim().toUpperCase();
-        const u = localStorage.getItem("session");
-        if(!k) return;
-
-        const pBar = document.getElementById('pBar');
-        document.getElementById('pCont').style.display = 'block';
-        document.getElementById('btnKey').disabled = true;
+<div class="terminal-box">
+    <h3>> VDANN_SYSTEM_ACCESS</h3>
+    
+    <div id="sec-key">
+        <input id="keyInput" placeholder="NHẬP MÃ TRUY CẬP VIP..." autocomplete="off">
+        <button id="btnKey" onclick="accessSystem()">[ GIẢI MÃ & TRUY CẬP ]</button>
         
-        let pc = 0;
-        const iv = setInterval(() => {
-            pc += 5; pBar.style.width = pc + "%";
-            if(pc >= 100) {
-                clearInterval(iv);
-                db.ref('keys/'+k).transaction(data => {
-                    if(!data) return null;
-                    if(data.type && data.type.includes("LOCKED")) {
-                        if(!data.owner) data.owner = u;
-                        else if(data.owner !== u) return undefined;
-                    }
-                    if(data.used && data.type.includes("ONCE")) return undefined;
-                    if(data.expiresAt && Date.now() > data.expiresAt) return undefined;
-                    if(data.type.includes("ONCE")) data.used = true;
-                    return data;
-                }, (err, ok, snap) => {
-                    document.getElementById('btnKey').disabled = false;
-                    if(ok && snap.exists()) { showNotice("TRUY CẬP ĐƯỢC CHẤP NHẬN!"); setTimeout(()=>window.location.href="index.html", 1000); }
-                    else showNotice("KEY KHÔNG HỢP LỆ HOẶC BỊ KHÓA");
-                });
+        <div class="progress-container" id="pCont">
+            <div class="progress-bar" id="pBar"></div>
+        </div>
+        
+        <div id="msg">root@vdann:~# awaiting_key...</div>
+    </div>
+</div>
+
+<script type="module">
+    // --- FIREBASE v10 CONFIG ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCIiLWiEDSnPGLqiUvxvGcCElljVGioW8I",
+        authDomain: "vdann-app.firebaseapp.com",
+        projectId: "vdann-app",
+        storageBucket: "vdann-app.firebasestorage.app",
+        messagingSenderId: "458475880895",
+        appId: "1:458475880895:web:aa5f3193917e571d8d610a",
+        databaseURL: "https://vdann-app-default-rtdb.firebaseio.com"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Hàm tạo mã định danh máy (HWID)
+    function generateHWID() {
+        return btoa(navigator.userAgent + screen.width + navigator.language).substring(0, 16);
+    }
+
+    // Gắn hàm vào window để gọi được từ button onclick
+    window.accessSystem = function() {
+        const key = document.getElementById('keyInput').value.trim();
+        const msg = document.getElementById('msg');
+        const pBar = document.getElementById('pBar');
+        const pCont = document.getElementById('pCont');
+        const btn = document.getElementById('btnKey');
+        const myHWID = generateHWID();
+
+        if(!key) {
+            msg.innerText = "LỖI: VUI LÒNG NHẬP MÃ!";
+            return;
+        }
+
+        // Hiệu ứng chạy thanh tiến trình cho "ngầu"
+        btn.disabled = true;
+        pCont.style.display = 'block';
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 5;
+            pBar.style.width = progress + "%";
+            msg.innerText = "ĐANG GIẢI MÃ: " + progress + "%";
+
+            if(progress >= 100) {
+                clearInterval(interval);
+                verifyKey(key, myHWID);
             }
         }, 30);
     }
 
-    function logout() { localStorage.clear(); location.reload(); }
+    function verifyKey(key, myHWID) {
+        const msg = document.getElementById('msg');
+        const btn = document.getElementById('btnKey');
+
+        get(ref(db, 'AllKeys/' + key)).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const now = Date.now();
+
+                // 1. Kiểm tra hạn dùng
+                if (now > data.expires) {
+                    msg.innerText = "TRUY CẬP BỊ TỪ CHỐI: KEY HẾT HẠN!";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // 2. Kiểm tra thiết bị (HWID)
+                if (data.hwid === "") {
+                    // Lần đầu dùng: Khóa HWID vào key này
+                    update(ref(db, 'AllKeys/' + key), { hwid: myHWID }).then(() => {
+                        msg.innerText = "KÍCH HOẠT THIẾT BỊ THÀNH CÔNG!";
+                        setTimeout(() => window.location.href = "index.html", 1000);
+                    });
+                } else if (data.hwid === myHWID) {
+                    // Đúng máy cũ
+                    msg.innerText = "XÁC THỰC THÀNH CÔNG!";
+                    setTimeout(() => window.location.href = "index.html", 1000);
+                } else {
+                    // Máy khác dùng key này
+                    msg.innerText = "LỖI: KEY ĐÃ LIÊN KẾT VỚI MÁY KHÁC!";
+                    btn.disabled = false;
+                    alert("CẢNH BÁO: Thiết bị không trùng khớp!");
+                }
+            } else {
+                msg.innerText = "LỖI: KEY KHÔNG TỒN TẠI TRÊN HỆ THỐNG!";
+                btn.disabled = false;
+            }
+        }).catch(err => {
+            msg.innerText = "LỖI KẾT NỐI HỆ THỐNG!";
+            btn.disabled = false;
+        });
+    }
 
     // --- MATRIX EFFECT ---
     const canvas = document.getElementById('matrix-canvas');
@@ -201,11 +160,6 @@
             if(y*16 > canvas.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
         });
     }, 35);
-
-    window.onload = () => {
-        const s = localStorage.getItem("session");
-        if(s && localStorage.getItem("auto")) enterKeySection(s);
-    };
 </script>
 </body>
 </html>
