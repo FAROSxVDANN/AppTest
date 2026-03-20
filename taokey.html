@@ -27,7 +27,7 @@
         <h3>TẠO KEY MỚI</h3>
         <input type="number" id="days" placeholder="Số ngày (VD: 1)" value="1" style="width: 80px;">
         <select id="keyType">
-            <option value="lock">KHÓA 1 THIẾT BỊ</option>
+            <option value="lock">CHỈ 1 MÁY</option>
             <option value="multi">KHÔNG GIỚI HẠN MÁY</option>
         </select>
         <button onclick="createKey()">[ TẠO NGAY ]</button>
@@ -50,79 +50,100 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCIiLWiEDSnPGLqiUvxvGcCElljVGioW8I",
-            authDomain: "vdann-app.firebaseapp.com",
-            projectId: "vdann-app",
-            storageBucket: "vdann-app.firebasestorage.app",
-            messagingSenderId: "458475880895",
-            appId: "1:458475880895:web:aa5f3193917e571d8d610a",
-            databaseURL: "https://vdann-app-default-rtdb.firebaseio.com"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyCIiLWiEDSnPGLqiUvxvGcCElljVGioW8I",
+        authDomain: "vdann-app.firebaseapp.com",
+        projectId: "vdann-app",
+        storageBucket: "vdann-app.firebasestorage.app",
+        messagingSenderId: "458475880895",
+        appId: "1:458475880895:web:aa5f3193917e571d8d610a",
+        databaseURL: "https://vdann-app-default-rtdb.firebaseio.com"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        // Hàm tạo Key
-        window.createKey = function() {
-            const days = document.getElementById('days').value;
-            const type = document.getElementById('keyType').value;
-            const newKey = "VDANN-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-            const expireTimestamp = Date.now() + (days * 24 * 60 * 60 * 1000);
+    // Hàm tạo mã định danh máy (HWID)
+    function generateHWID() {
+        return btoa(navigator.userAgent + screen.width + navigator.language).substring(0, 16);
+    }
 
-            set(ref(db, 'AllKeys/' + newKey), {
-                key: newKey,
-                expires: expireTimestamp,
-                hwid: type === "multi" ? "MULTI_DEVICE" : "", 
-                type: type,
-                status: "active"
-            }).then(() => alert("Đã tạo " + (type==="multi"?"Key Đa Máy: ":"Key Khóa Máy: ") + newKey));
-        };
+    window.accessSystem = function() {
+        const key = document.getElementById('keyInput').value.trim();
+        const msg = document.getElementById('msg');
+        const pBar = document.getElementById('pBar');
+        const pCont = document.getElementById('pCont');
+        const btn = document.getElementById('btnKey');
+        const myHWID = generateHWID();
 
-        // Hàm Copy Key
-        window.copyKey = function(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert("Đã copy mã: " + text);
-            });
-        };
+        if(!key) {
+            msg.innerText = "LỖI: VUI LÒNG NHẬP MÃ!";
+            return;
+        }
 
-        // Hàm xóa Key
-        window.deleteKey = function(id) {
-            if(confirm("Xác nhận xóa Key: " + id + "?")) remove(ref(db, 'AllKeys/' + id));
-        };
+        btn.disabled = true;
+        pCont.style.display = 'block';
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            pBar.style.width = progress + "%";
+            msg.innerText = "ĐANG XÁC THỰC: " + progress + "%";
 
-        // Lấy danh sách Key thời gian thực
-        onValue(ref(db, 'AllKeys'), (snapshot) => {
-            const tbody = document.getElementById('keyTable');
-            tbody.innerHTML = "";
-            snapshot.forEach((child) => {
-                const data = child.val();
-                const dateStr = new Date(data.expires).toLocaleString('vi-VN');
+            if(progress >= 100) {
+                clearInterval(interval);
                 
-                let hwidStatus = "";
-                if (data.hwid === "MULTI_DEVICE") {
-                    hwidStatus = '<span class="status-multi">ĐA MÁY</span>';
-                } else {
-                    hwidStatus = data.hwid ? '<span style="color:red">ĐÃ KHÓA</span>' : '<span style="color:#0f0">SẴN SÀNG</span>';
-                }
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="color:white; font-weight:bold;">${data.key}</td>
-                        <td>${dateStr}</td>
-                        <td>${data.type === "multi" ? "ĐA MÁY" : "1 MÁY"}</td>
-                        <td>${hwidStatus}</td>
-                        <td>
-                            <button class="btn-copy" onclick="copyKey('${data.key}')">COPY</button>
-                            <button class="btn-del" onclick="deleteKey('${data.key}')">XÓA</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        });
-    </script>
+                // BẮT ĐẦU KIỂM TRA TRÊN FIREBASE
+                get(ref(db, 'AllKeys/' + key)).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        const now = Date.now();
+
+                        // 1. Kiểm tra hạn dùng (Cả 2 loại key đều phải check cái này)
+                        if (now > data.expires) {
+                            msg.innerText = "TRUY CẬP BỊ TỪ CHỐI: KEY HẾT HẠN!";
+                            btn.disabled = false;
+                            return;
+                        }
+
+                        // 2. Kiểm tra loại Key và HWID
+                        if (data.type === "multi" || data.hwid === "MULTI_DEVICE") {
+                            // LOẠI KHÔNG GIỚI HẠN: Cho phép vào luôn
+                            msg.innerText = "KEY ĐA MÁY - TRUY CẬP ĐƯỢC CHẤP NHẬN!";
+                            setTimeout(() => window.location.href = "index.html", 1000);
+                        } 
+                        else {
+                            // LOẠI KHÓA 1 THIẾT BỊ
+                            if (data.hwid === "") {
+                                // Lần đầu nhập -> Khóa máy này lại
+                                update(ref(db, 'AllKeys/' + key), { hwid: myHWID }).then(() => {
+                                    msg.innerText = "KÍCH HOẠT THÀNH CÔNG THIẾT BỊ!";
+                                    setTimeout(() => window.location.href = "index.html", 1000);
+                                });
+                            } else if (data.hwid === myHWID) {
+                                // Đúng máy đã khóa từ trước
+                                msg.innerText = "THIẾT BỊ HỢP LỆ. ĐANG VÀO...";
+                                setTimeout(() => window.location.href = "index.html", 1000);
+                            } else {
+                                // Máy khác nhập key đã bị khóa
+                                msg.innerText = "LỖI: KEY ĐÃ LIÊN KẾT VỚI MÁY KHÁC!";
+                                btn.disabled = false;
+                                alert("CẢNH BÁO: Bạn không thể dùng key này trên máy khác!");
+                            }
+                        }
+                    } else {
+                        msg.innerText = "LỖI: KEY KHÔNG TỒN TẠI!";
+                        btn.disabled = false;
+                    }
+                }).catch(err => {
+                    msg.innerText = "LỖI KẾT NỐI DATABASE!";
+                    btn.disabled = false;
+                });
+            }
+        }, 50);
+    }
+</script>
 </body>
 </html>
