@@ -3,38 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADMIN VDANN </title>
+    <title>ADMIN | VDANN SYSTEM</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        :root { --neon: #00ff41; --bg: #0a0a0a; }
+        :root { --neon: #00ff41; --bg: #0a0a0a; --red: #ff3e3e; --blue: #0099ff; }
         body { background: var(--bg); color: var(--neon); font-family: 'Share Tech Mono', monospace; padding: 20px; text-align: center; }
-        .box { border: 1px solid var(--neon); padding: 20px; max-width: 500px; margin: 0 auto 20px; box-shadow: 0 0 15px rgba(0,255,65,0.2); }
-        input, button { background: black; border: 1px solid var(--neon); color: var(--neon); padding: 10px; margin: 5px; outline: none; }
+        .box { border: 1px solid var(--neon); padding: 20px; max-width: 600px; margin: 0 auto 20px; box-shadow: 0 0 15px rgba(0,255,65,0.2); }
+        input, button, select { background: black; border: 1px solid var(--neon); color: var(--neon); padding: 10px; margin: 5px; outline: none; }
         button:hover { background: var(--neon); color: black; cursor: pointer; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        th, td { border: 1px solid var(--neon); padding: 10px; font-size: 12px; }
-        .status-ready { color: #00ff41; }
-        .status-used { color: #ff3e3e; }
+        .btn-copy { border-color: var(--blue); color: var(--blue); }
+        .btn-copy:hover { background: var(--blue); color: white; }
+        .btn-del { border-color: var(--red); color: var(--red); }
+        .btn-del:hover { background: var(--red); color: white; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 13px; }
+        th, td { border: 1px solid var(--neon); padding: 10px; }
+        .status-multi { color: #ffcc00; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>ADMIN DASHBOARD - KEY SYSTEM</h1>
+    <h1>VDANN ADMIN - KEY MANAGER</h1>
     
     <div class="box">
         <h3>TẠO KEY MỚI</h3>
-        <input type="number" id="days" placeholder="Số ngày (VD: 1)" value="1">
+        <input type="number" id="days" placeholder="Số ngày (VD: 1)" value="1" style="width: 80px;">
+        <select id="keyType">
+            <option value="lock">KHÓA 1 THIẾT BỊ</option>
+            <option value="multi">KHÔNG GIỚI HẠN MÁY</option>
+        </select>
         <button onclick="createKey()">[ TẠO NGAY ]</button>
     </div>
 
-    <div class="box">
+    <div class="box" style="max-width: 800px;">
         <h3>DANH SÁCH KEY</h3>
         <table>
             <thead>
                 <tr>
                     <th>KEY</th>
                     <th>HẠN DÙNG</th>
+                    <th>LOẠI</th>
                     <th>THIẾT BỊ</th>
-                    <th>HÀNH ĐỘNG</th>
+                    <th>THAO TÁC</th>
                 </tr>
             </thead>
             <tbody id="keyTable"></tbody>
@@ -61,20 +69,29 @@
         // Hàm tạo Key
         window.createKey = function() {
             const days = document.getElementById('days').value;
-            const newKey = "KEY-VDANN-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const type = document.getElementById('keyType').value;
+            const newKey = "VDANN-" + Math.random().toString(36).substring(2, 8).toUpperCase();
             const expireTimestamp = Date.now() + (days * 24 * 60 * 60 * 1000);
 
             set(ref(db, 'AllKeys/' + newKey), {
                 key: newKey,
                 expires: expireTimestamp,
-                hwid: "", // Trống để người dùng đầu tiên liên kết
+                hwid: type === "multi" ? "MULTI_DEVICE" : "", 
+                type: type,
                 status: "active"
-            }).then(() => alert("Đã tạo Key: " + newKey));
+            }).then(() => alert("Đã tạo " + (type==="multi"?"Key Đa Máy: ":"Key Khóa Máy: ") + newKey));
+        };
+
+        // Hàm Copy Key
+        window.copyKey = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Đã copy mã: " + text);
+            });
         };
 
         // Hàm xóa Key
         window.deleteKey = function(id) {
-            if(confirm("Xóa Key này?")) remove(ref(db, 'AllKeys/' + id));
+            if(confirm("Xác nhận xóa Key: " + id + "?")) remove(ref(db, 'AllKeys/' + id));
         };
 
         // Lấy danh sách Key thời gian thực
@@ -83,15 +100,25 @@
             tbody.innerHTML = "";
             snapshot.forEach((child) => {
                 const data = child.val();
-                const dateStr = new Date(data.expires).toLocaleString();
-                const hwidDisplay = data.hwid ? `<span class="status-used">ĐÃ KHÓA</span>` : `<span class="status-ready">CHƯA DÙNG</span>`;
+                const dateStr = new Date(data.expires).toLocaleString('vi-VN');
+                
+                let hwidStatus = "";
+                if (data.hwid === "MULTI_DEVICE") {
+                    hwidStatus = '<span class="status-multi">ĐA MÁY</span>';
+                } else {
+                    hwidStatus = data.hwid ? '<span style="color:red">ĐÃ KHÓA</span>' : '<span style="color:#0f0">SẴN SÀNG</span>';
+                }
                 
                 tbody.innerHTML += `
                     <tr>
-                        <td>${data.key}</td>
+                        <td style="color:white; font-weight:bold;">${data.key}</td>
                         <td>${dateStr}</td>
-                        <td>${hwidDisplay}</td>
-                        <td><button onclick="deleteKey('${data.key}')">XÓA</button></td>
+                        <td>${data.type === "multi" ? "ĐA MÁY" : "1 MÁY"}</td>
+                        <td>${hwidStatus}</td>
+                        <td>
+                            <button class="btn-copy" onclick="copyKey('${data.key}')">COPY</button>
+                            <button class="btn-del" onclick="deleteKey('${data.key}')">XÓA</button>
+                        </td>
                     </tr>
                 `;
             });
